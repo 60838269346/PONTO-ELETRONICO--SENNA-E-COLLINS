@@ -2,42 +2,65 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Ponto Eletrônico</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ponto Eletrônico 2026</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background-color: #f4f4f9; }
-        #relogio { font-size: 3em; color: #333; margin-bottom: 20px; }
-        button { padding: 20px 40px; font-size: 1.5em; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 10px; }
-        ul { list-style: none; padding: 0; margin-top: 20px; }
-        li { background: white; padding: 10px; margin: 5px auto; width: 300px; border: 1px solid #ddd; border-radius: 5px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; }
+        button { background: #2563eb; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #1d4ed8; }
+        select { padding: 10px; margin: 10px; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border-bottom: 1px solid #ddd; padding: 10px; text-align: left; }
     </style>
 </head>
 <body>
-    <h1>Meu Ponto</h1>
-    <div id="relogio">00:00:00</div>
-    <button onclick="baterPonto()">Registrar Ponto</button>
-    <h3>Histórico:</h3>
-    <ul id="historico"></ul>
 
-    <script>
-        setInterval(() => {
-            document.getElementById('relogio').innerText = new Date().toLocaleTimeString();
-        }, 1000);
+<div class="card">
+    <h1>Ponto 2026</h1>
+    <h2 id="relogio">00:00:00</h2>
+    <button onclick="registrarPonto()">Registrar Agora</button>
+    
+    <div style="margin-top: 20px;">
+        <select id="mesSelect" onchange="carregarMes()">
+            <option value="0">Janeiro</option><option value="1">Fevereiro</option>
+            <option value="2">Março</option><option value="3">Abril</option>
+            <option value="4">Maio</option><option value="5">Junho</option>
+            <option value="6">Julho</option><option value="7">Agosto</option>
+            <option value="8">Setembro</option><option value="9">Outubro</option>
+            <option value="10">Novembro</option><option value="11">Dezembro</option>
+        </select>
+    </div>
 
-        function atualizarLista() {
-            const historico = JSON.parse(localStorage.getItem('pontos') || '[]');
-            const ul = document.getElementById('historico');
-            ul.innerHTML = historico.map(p => `<li>${p}</li>`).join('');
-        }
+    <table id="tabelaPonto">
+        <thead><tr><th>Data/Hora</th></tr></thead>
+        <tbody id="corpoTabela"></tbody>
+    </table>
+</div>
+
+<script>
+    setInterval(() => document.getElementById('relogio').innerText = new Date().toLocaleTimeString(), 1000);
+
+    function registrarPonto() {
+        const data = new Date();
+        const registro = data.toLocaleString();
+        let pontos = JSON.parse(localStorage.getItem('pontos2026') || '[]');
+        pontos.push({ data: data, texto: registro });
+        localStorage.setItem('pontos2026', JSON.stringify(pontos));
+        carregarMes();
+    }
+
+    function carregarMes() {
+        const mesEscolhido = document.getElementById('mesSelect').value;
+        const pontos = JSON.parse(localStorage.getItem('pontos2026') || '[]');
+        const corpo = document.getElementById('corpoTabela');
+        corpo.innerHTML = '';
         
-        function baterPonto() {
-            const agora = new Date().toLocaleString();
-            let historico = JSON.parse(localStorage.getItem('pontos') || '[]');
-            historico.push(agora);
-            localStorage.setItem('pontos', JSON.stringify(historico));
-            atualizarLista();
-        }
-
-        atualizarLista();
-    </script>
+        pontos.filter(p => new Date(p.data).getMonth() == mesEscolhido).forEach(p => {
+            corpo.innerHTML += `<tr><td>${p.texto}</td></tr>`;
+        });
+    }
+    carregarMes();
+</script>
 </body>
 </html>
