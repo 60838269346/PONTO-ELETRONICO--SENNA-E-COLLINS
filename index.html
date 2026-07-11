@@ -6,12 +6,14 @@
     <title>Ponto Eletrônico 2026</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; }
-        button { background: #2563eb; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 600px; text-align: center; }
+        .botoes-ponto { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        button { background: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
         button:hover { background: #1d4ed8; }
-        select { padding: 10px; margin: 10px 0; width: 100%; border-radius: 8px; border: 1px solid #ddd; }
+        select { padding: 10px; width: 100%; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
-        th, td { border-bottom: 1px solid #ddd; padding: 10px; text-align: left; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background: #f8f9fa; }
     </style>
 </head>
 <body>
@@ -21,7 +23,7 @@
     <h2 id="relogio">00:00:00</h2>
     <p><strong>Colaborador:</strong> Jonh Henrique Sena da Silva</p>
     
-    <select id="mesSelect" onchange="carregarDados()">
+    <select id="mesSelect" onchange="renderizarTabela()">
         <option value="0">Janeiro</option><option value="1">Fevereiro</option>
         <option value="2">Março</option><option value="3">Abril</option>
         <option value="4">Maio</option><option value="5">Junho</option>
@@ -30,10 +32,17 @@
         <option value="10">Novembro</option><option value="11">Dezembro</option>
     </select>
 
-    <button onclick="registrarPonto()">Registrar Ponto</button>
+    <div class="botoes-ponto">
+        <button onclick="registrar('entrada')">Entrada</button>
+        <button onclick="registrar('almocoSaida')">Saída Almoço</button>
+        <button onclick="registrar('almocoRetorno')">Volta Almoço</button>
+        <button onclick="registrar('saida')">Saída Final</button>
+    </div>
 
-    <table id="tabelaPonto">
-        <thead><tr><th>Data/Hora</th></tr></thead>
+    <table>
+        <thead>
+            <tr><th>Dia</th><th>Entrada</th><th>S. Almoço</th><th>V. Almoço</th><th>Saída</th></tr>
+        </thead>
         <tbody id="corpoTabela"></tbody>
     </table>
 </div>
@@ -41,27 +50,39 @@
 <script>
     setInterval(() => document.getElementById('relogio').innerText = new Date().toLocaleTimeString(), 1000);
 
-    function registrarPonto() {
-        const nome = "Jonh Henrique Sena da Silva";
-        const data = new Date();
-        const registro = data.toLocaleString();
-        let pontos = JSON.parse(localStorage.getItem('pontos2026') || '[]');
-        pontos.push({ nome: nome, data: data, texto: registro });
+    function registrar(tipo) {
+        const hoje = new Date();
+        const dataKey = hoje.toLocaleDateString(); 
+        let pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+        
+        if (!pontos[dataKey]) {
+            pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
+        }
+        
+        // Atualiza apenas a coluna clicada com o horário atual
+        pontos[dataKey][tipo] = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
         localStorage.setItem('pontos2026', JSON.stringify(pontos));
-        carregarDados();
+        renderizarTabela();
     }
 
-    function carregarDados() {
-        const mesEscolhido = document.getElementById('mesSelect').value;
-        const pontos = JSON.parse(localStorage.getItem('pontos2026') || '[]');
+    function renderizarTabela() {
+        const mesEscolhido = parseInt(document.getElementById('mesSelect').value);
+        const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
         const corpo = document.getElementById('corpoTabela');
         corpo.innerHTML = '';
         
-        pontos.filter(p => new Date(p.data).getMonth() == mesEscolhido).forEach(p => {
-            corpo.innerHTML += `<tr><td>${p.texto}</td></tr>`;
+        Object.keys(pontos).forEach(data => {
+            const d = data.split('/');
+            if (parseInt(d[1]) - 1 === mesEscolhido) {
+                const p = pontos[data];
+                corpo.innerHTML += `<tr><td>${d[0]}</td><td>${p.entrada}</td><td>${p.almocoSaida}</td><td>${p.almocoRetorno}</td><td>${p.saida}</td></tr>`;
+            }
         });
     }
-    carregarDados();
+    
+    document.getElementById('mesSelect').value = new Date().getMonth();
+    renderizarTabela();
 </script>
 </body>
 </html>
