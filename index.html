@@ -1,69 +1,42 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ponto Eletrônico 2026</title>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 600px; text-align: center; }
-        .botoes-ponto { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        button { background: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        button:hover { background: #1d4ed8; }
-        select { padding: 10px; width: 100%; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        th { background: #f8f9fa; }
-    </style>
-</head>
-<body>
-
-<div class="card">
-    <h1>Ponto 2026</h1>
-    <h2 id="relogio">00:00:00</h2>
-    <p><strong>Colaborador:</strong> Jonh Henrique Sena da Silva</p>
-    
-    <select id="mesSelect" onchange="renderizarTabela()">
-        <option value="0">Janeiro</option><option value="1">Fevereiro</option>
-        <option value="2">Março</option><option value="3">Abril</option>
-        <option value="4">Maio</option><option value="5">Junho</option>
-        <option value="6">Julho</option><option value="7">Agosto</option>
-        <option value="8">Setembro</option><option value="9">Outubro</option>
-        <option value="10">Novembro</option><option value="11">Dezembro</option>
-    </select>
-
-    <div class="botoes-ponto">
-        <button onclick="registrar('entrada')">Entrada</button>
-        <button onclick="registrar('almocoSaida')">Saída Almoço</button>
-        <button onclick="registrar('almocoRetorno')">Volta Almoço</button>
-        <button onclick="registrar('saida')">Saída Final</button>
-    </div>
-
-    <table>
-        <thead>
-            <tr><th>Dia</th><th>Entrada</th><th>S. Almoço</th><th>V. Almoço</th><th>Saída</th></tr>
-        </thead>
-        <tbody id="corpoTabela"></tbody>
-    </table>
-</div>
-
 <script>
+    // Configuração de senha
+    const SENHA_EDICAO = "123456";
+
+    // Relógio em tempo real
     setInterval(() => document.getElementById('relogio').innerText = new Date().toLocaleTimeString(), 1000);
 
     function registrar(tipo) {
         const hoje = new Date();
-        const dataKey = hoje.toLocaleDateString(); 
+        const dataKey = hoje.toLocaleDateString();
         let pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
         
         if (!pontos[dataKey]) {
             pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
         }
         
-        // Atualiza apenas a coluna clicada com o horário atual
         pontos[dataKey][tipo] = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
         localStorage.setItem('pontos2026', JSON.stringify(pontos));
         renderizarTabela();
+    }
+
+    function editarPonto(data, tipo) {
+        const senha = prompt("Digite a senha de administrador para editar:");
+        
+        if (senha !== SENHA_EDICAO) {
+            alert("Senha incorreta!");
+            return;
+        }
+
+        const novoHorario = prompt("Digite o novo horário (ex: 08:00):");
+        
+        if (novoHorario) {
+            let pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+            if (pontos[data]) {
+                pontos[data][tipo] = novoHorario;
+                localStorage.setItem('pontos2026', JSON.stringify(pontos));
+                renderizarTabela();
+            }
+        }
     }
 
     function renderizarTabela() {
@@ -71,18 +44,25 @@
         const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
         const corpo = document.getElementById('corpoTabela');
         corpo.innerHTML = '';
-        
-        Object.keys(pontos).forEach(data => {
+
+        // Ordena as datas para exibição correta
+        Object.keys(pontos).sort().forEach(data => {
             const d = data.split('/');
             if (parseInt(d[1]) - 1 === mesEscolhido) {
                 const p = pontos[data];
-                corpo.innerHTML += `<tr><td>${d[0]}</td><td>${p.entrada}</td><td>${p.almocoSaida}</td><td>${p.almocoRetorno}</td><td>${p.saida}</td></tr>`;
+                corpo.innerHTML += `
+                    <tr>
+                        <td>${d[0]}</td>
+                        <td onclick="editarPonto('${data}', 'entrada')" style="cursor:pointer; color:blue;" title="Clique para editar">${p.entrada}</td>
+                        <td onclick="editarPonto('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;" title="Clique para editar">${p.almocoSaida}</td>
+                        <td onclick="editarPonto('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;" title="Clique para editar">${p.almocoRetorno}</td>
+                        <td onclick="editarPonto('${data}', 'saida')" style="cursor:pointer; color:blue;" title="Clique para editar">${p.saida}</td>
+                    </tr>`;
             }
         });
     }
-    
+
+    // Inicialização
     document.getElementById('mesSelect').value = new Date().getMonth();
     renderizarTabela();
 </script>
-</body>
-</html>
