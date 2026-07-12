@@ -54,9 +54,16 @@
                 </tr>`;
             });
         }
-
-        function interagir(data, tipo) {
+function interagir(data, tipo) {
             const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+            
+            // Verifica a senha ANTES de permitir qualquer ação
+            const senhaDigitada = prompt("Digite a senha para alterar este registro:");
+            if (senhaDigitada !== SENHA) {
+                alert("Senha incorreta!");
+                return; // Para a execução aqui se a senha estiver errada
+            }
+
             const acao = prompt("Deseja [E]ditar ou [X]cluir?", "E");
             if (acao && acao.toUpperCase() === 'X') {
                 if (confirm("Confirmar exclusão?")) {
