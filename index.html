@@ -6,7 +6,6 @@
 </head>
 <body>
     <h1>Relógio: <span id="relogio">00:00:00</span></h1>
-    
     <button onclick="registrar('entrada')">Entrada</button>
     <button onclick="registrar('almocoSaida')">Saída Almoço</button>
     <button onclick="registrar('almocoRetorno')">Retorno Almoço</button>
@@ -28,20 +27,13 @@
 
     <script>
         const SENHA = "123456";
-
-        setInterval(() => {
-            document.getElementById('relogio').innerText = new Date().toLocaleTimeString();
-        }, 1000);
+        setInterval(() => {document.getElementById('relogio').innerText = new Date().toLocaleTimeString(); }, 1000);
 
         function registrar(tipo) {
             const hoje = new Date();
             const dataKey = hoje.toLocaleDateString();
             let pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-            
-            if (!pontos[dataKey]) {
-                pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
-            }
-            
+            if (!pontos[dataKey]) { pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' }; }
             pontos[dataKey][tipo] = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             localStorage.setItem('pontos2026', JSON.stringify(pontos));
             renderizarTabela();
@@ -51,49 +43,44 @@
             const corpo = document.getElementById('corpoTabela');
             corpo.innerHTML = '';
             const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-            
             Object.keys(pontos).sort().forEach(data => {
                 const p = pontos[data];
                 corpo.innerHTML += `<tr>
                     <td>${data}</td>
-                    <td>${p.entrada}</td>
-                    <td>${p.almocoSaida}</td>
-                    <td>${p.almocoRetorno}</td>
-                    <td>${p.saida}</td>
+                    <td onclick="interagir('${data}', 'entrada')" style="cursor:pointer; color:blue;">${p.entrada}</td>
+                    <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td>
+                    <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td>
+                    <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td>
                 </tr>`;
             });
         }
 
+        function interagir(data, tipo) {
+            const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+            const acao = prompt("Deseja [E]ditar ou [X]cluir?", "E");
+            if (acao && acao.toUpperCase() === 'X') {
+                if (confirm("Confirmar exclusão?")) {
+                    pontos[data][tipo] = '-';
+                    localStorage.setItem('pontos2026', JSON.stringify(pontos));
+                    renderizarTabela();
+                }
+            } else if (acao && acao.toUpperCase() === 'E') {
+                const novo = prompt("Novo horário (HH:MM):", pontos[data][tipo]);
+                if (novo) {
+                    pontos[data][tipo] = novo;
+                    localStorage.setItem('pontos2026', JSON.stringify(pontos));
+                    renderizarTabela();
+                }
+            }
+        }
+
         function limparTudo() {
-            if (prompt("Digite a senha para apagar:") === SENHA) {
+            if (prompt("Senha para apagar:") === SENHA) {
                 localStorage.removeItem('pontos2026');
                 renderizarTabela();
             }
         }
-
         renderizarTabela();
     </script>
 </body>
 </html>
-// --- FUNÇÃO COMPLEMENTAR: EDIÇÃO E EXCLUSÃO ---
-function interagirComRegistro(data, tipo) {
-    const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-    
-    // Pergunta o que o usuário deseja fazer
-    const acao = prompt("Deseja [E]ditar ou [X]cluir este horário?", "E");
-    
-    if (acao && acao.toUpperCase() === 'X') {
-        if (confirm("Confirmar exclusão deste horário?")) {
-            pontos[data][tipo] = '-';
-            localStorage.setItem('pontos2026', JSON.stringify(pontos));
-            renderizarTabela();
-        }
-    } else if (acao && acao.toUpperCase() === 'E') {
-        const novo = prompt("Digite o novo horário (HH:MM):", pontos[data][tipo]);
-        if (novo) {
-            pontos[data][tipo] = novo;
-            localStorage.setItem('pontos2026', JSON.stringify(pontos));
-            renderizarTabela();
-        }
-    }
-}
