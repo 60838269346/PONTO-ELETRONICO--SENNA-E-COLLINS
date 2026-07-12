@@ -87,3 +87,27 @@
     </script>
 </body>
 </html>
+<!-- Botão de Limpeza -->
+    <div style="margin-top: 20px;">
+        <button class="btn" onclick="limparDados()" style="background-color: #dc3545; color: white;">Limpar Tudo</button>
+    </div>
+
+    <script>
+        const SENHA_EDICAO = "123456";
+
+        // ... (mantenha o restante do seu script como está)
+
+        // Adicione esta função dentro do seu bloco <script>:
+        function limparDados() {
+            const senha = prompt("Digite a senha para APAGAR TODO O HISTÓRICO:");
+            if (senha === SENHA_EDICAO) {
+                if (confirm("TEM CERTEZA? Isso apagará todas as batidas registradas.")) {
+                    localStorage.removeItem('pontos2026');
+                    renderizarTabela();
+                    alert("Histórico apagado com sucesso!");
+                }
+            } else {
+                alert("Senha incorreta!");
+            }
+        }
+    </script>
