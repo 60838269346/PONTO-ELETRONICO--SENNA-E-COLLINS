@@ -4,70 +4,24 @@
     <meta charset="UTF-8">
     <title>Ponto Eletrônico</title>
     <style>
-      <style>
-    /* Estilo Geral */
-    body { 
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-        background-color: #f4f7f6; 
-        color: #333;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 20px;
-    }
+        body { font-family: sans-serif; text-align: center; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 10px; }
+        .btn { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
 
-    h1 { color: #2c3e50; }
-
-    /* Relógio em destaque */
-    #relogio { 
-        font-size: 2.5rem; 
-        font-weight: bold; 
-        color: #3498db;
-        margin: 10px 0;
-    }
-
-    /* Seletor de mês */
-    #mesSelect {
-        padding: 10px;
-        border-radius: 8px;
-        border: 1px solid #ddd;
-        font-size: 1rem;
-        margin-bottom: 20px;
-    }
-
-    /* Botões */
-    .btn { 
-        padding: 12px 20px; 
-        margin: 5px; 
-        cursor: pointer; 
-        border: none;
-        border-radius: 5px;
-        background-color: #27ae60;
-        color: white;
-        font-weight: bold;
-        transition: background 0.3s;
-    }
-    .btn:hover { background-color: #219150; }
-
-    /* Tabela Estilizada */
-    table { 
-        width: 90%; 
-        max-width: 800px;
-        border-collapse: separate; 
-        border-spacing: 0;
-        margin-top: 20px; 
-        background: white;
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    th { background-color: #34495e; color: white; padding: 15px; }
-    td { border-bottom: 1px solid #eee; padding: 12px; text-align: center; }
+    <h1>Ponto Eletrônico</h1>
+    <h2 id="relogio">00:00:00</h2>
     
-    /* Efeito de edição */
-    td:not(:first-child) { cursor: pointer; transition: background 0.2s; }
-    td:not(:first-child):hover { background-color: #ecf0f1; color: #2980b9; font-weight: bold; }
-</style>
+    <select id="mesSelect" onchange="renderizarTabela()">
+        <option value="0">Janeiro</option> <option value="1">Fevereiro</option>
+        <option value="2">Março</option> <option value="3">Abril</option>
+        <option value="4">Maio</option> <option value="5">Junho</option>
+        <option value="6">Julho</option> <option value="7">Agosto</option>
+        <option value="8">Setembro</option> <option value="9">Outubro</option>
+        <option value="10">Novembro</option> <option value="11">Dezembro</option>
     </select>
 
     <br><br>
