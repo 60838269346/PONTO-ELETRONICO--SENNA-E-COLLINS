@@ -85,23 +85,37 @@
         document.getElementById('mesSelect').value = new Date().getMonth();
         renderizarTabela();
     </script>
+<!-- ... (mantenha tudo como está acima) ... -->
+    <tbody id="corpoTabela"></tbody>
+</table>
+
+<!-- Botão de Limpeza -->
+<div style="margin-top: 20px;">
+    <button class="btn" onclick="limparDados()" style="background-color: #dc3545; color: white;">Limpar Tudo</button>
+</div>
+
+<script>
+    const SENHA_EDICAO = "123456";
+
+    // ... (mantenha as suas funções registrar, editarPonto e renderizarTabela exatamente como estão) ...
+
+    function limparDados() {
+        const senha = prompt("Digite a senha para APAGAR TODO O HISTÓRICO:");
+        if (senha === SENHA_EDICAO) {
+            if (confirm("TEM CERTEZA? Isso apagará todas as batidas registradas.")) {
+                localStorage.removeItem('pontos2026');
+                document.getElementById('corpoTabela').innerHTML = '';
+                alert("Histórico apagado com sucesso!");
+                location.reload(); 
+            }
+        } else {
+            alert("Senha incorreta!");
+        }
+    }
+
+    // Estas linhas devem ficar no final do script
+    document.getElementById('mesSelect').value = new Date().getMonth();
+    renderizarTabela();
+</script>
 </body>
 </html>
-function limparDados() {
-    const senha = prompt("Digite a senha para APAGAR TODO O HISTÓRICO:");
-    if (senha === SENHA_EDICAO) {
-        if (confirm("TEM CERTEZA? Isso apagará todas as batidas registradas.")) {
-            // Limpa o item específico
-            localStorage.removeItem('pontos2026');
-            
-            // Força a atualização da tabela limpando o HTML manualmente
-            document.getElementById('corpoTabela').innerHTML = '';
-            
-            // Notifica o usuário e recarrega para garantir
-            alert("Histórico apagado com sucesso!");
-            location.reload(); 
-        }
-    } else {
-        alert("Senha incorreta!");
-    }
-}
