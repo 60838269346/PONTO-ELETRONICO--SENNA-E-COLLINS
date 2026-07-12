@@ -20,6 +20,7 @@
                 <th>Saída Almoço</th>
                 <th>Retorno Almoço</th>
                 <th>Saída</th>
+                <th>Saldo (vs 8h)</th>
             </tr>
         </thead>
         <tbody id="corpoTabela"></tbody>
@@ -27,13 +28,15 @@
 
     <script>
         const SENHA = "123456";
-        setInterval(() => {document.getElementById('relogio').innerText = new Date().toLocaleTimeString(); }, 1000);
+        setInterval(() => { document.getElementById('relogio').innerText = new Date().toLocaleTimeString(); }, 1000);
 
         function registrar(tipo) {
             const hoje = new Date();
             const dataKey = hoje.toLocaleDateString();
             let pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-            if (!pontos[dataKey]) { pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' }; }
+            if (!pontos[dataKey]) {
+                pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
+            }
             pontos[dataKey][tipo] = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             localStorage.setItem('pontos2026', JSON.stringify(pontos));
             renderizarTabela();
@@ -43,63 +46,15 @@
             const corpo = document.getElementById('corpoTabela');
             corpo.innerHTML = '';
             const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-            Object.keys(pontos).sort().forEach(data => {
-                const p = pontos[data];
-                corpo.innerHTML += `<tr>
-                    <td>${data}</td>
-                    <td onclick="interagir('${data}', 'entrada')" style="cursor:pointer; color:blue;">${p.entrada}</td>
-                    <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td>
-                    <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td>
-                    <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td>
-                </tr>`;
-            });
-        }
-function interagir(data, tipo) {
-            const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-            
-            // Verifica a senha ANTES de permitir qualquer ação
-            const senhaDigitada = prompt("Digite a senha para alterar este registro:");
-            if (senhaDigitada !== SENHA) {
-                alert("Senha incorreta!");
-                return; // Para a execução aqui se a senha estiver errada
-            }
-
-            const acao = prompt("Deseja [E]ditar ou [X]cluir?", "E");
-            if (acao && acao.toUpperCase() === 'X') {
-                if (confirm("Confirmar exclusão?")) {
-                    pontos[data][tipo] = '-';
-                    localStorage.setItem('pontos2026', JSON.stringify(pontos));
-                    renderizarTabela();
-                }
-            } else if (acao && acao.toUpperCase() === 'E') {
-                const novo = prompt("Novo horário (HH:MM):", pontos[data][tipo]);
-                if (novo) {
-                    pontos[data][tipo] = novo;
-                    localStorage.setItem('pontos2026', JSON.stringify(pontos));
-                    renderizarTabela();
-                }
-            }
-        }
-
-        function limparTudo() {
-            if (prompt("Senha para apagar:") === SENHA) {
-                localStorage.removeItem('pontos2026');
-                renderizarTabela();
-            }
-        }
-       function renderizarTabela() {
-            const corpo = document.getElementById('corpoTabela');
-            corpo.innerHTML = '';
-            const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
             let totalMensalMinutos = 0;
-            const META_DIARIA = 480; // 8 horas em minutos
+            const META_DIARIA = 480; // 8 horas = 480 minutos
 
             Object.keys(pontos).sort().forEach(data => {
                 const p = pontos[data];
                 const paraMinutos = (timeStr) => {
                     if (timeStr === '-') return 0;
                     const [h, m] = timeStr.split(':').map(Number);
-                    return h * 60 + m;
+                    return (h * 60) + m;
                 };
 
                 const manha = paraMinutos(p.almocoSaida) - paraMinutos(p.entrada);
@@ -134,3 +89,23 @@ function interagir(data, tipo) {
                 <td style="font-weight:bold; color:blue;">${totalH}h ${totalM}m</td>
             </tr>`;
         }
+
+        function interagir(data, tipo) {
+            const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+            const senhaDigitada = prompt("Senha:");
+            if (senhaDigitada !== SENHA) { alert("Senha incorreta!"); return; }
+            const acao = prompt("Deseja [E]ditar ou [X]cluir?", "E");
+            if (acao && acao.toUpperCase() === 'X') {
+                if (confirm("Confirmar?")) { pontos[data][tipo] = '-'; localStorage.setItem('pontos2026', JSON.stringify(pontos)); renderizarTabela(); }
+            } else if (acao && acao.toUpperCase() === 'E') {
+                const novo = prompt("Novo horário (HH:MM):", pontos[data][tipo]);
+                if (novo) { pontos[data][tipo] = novo; localStorage.setItem('pontos2026', JSON.stringify(pontos)); renderizarTabela(); }
+            }
+        }
+
+        function limparTudo() { if (prompt("Senha para apagar:") === SENHA) { localStorage.removeItem('pontos2026'); renderizarTabela(); } }
+        
+        renderizarTabela();
+    </script>
+</body>
+</html>
