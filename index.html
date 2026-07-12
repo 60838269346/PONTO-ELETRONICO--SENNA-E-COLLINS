@@ -87,17 +87,15 @@ function interagir(data, tipo) {
                 renderizarTabela();
             }
         }
-        renderizarTabela();
-        function renderizarTabela() {
+       function renderizarTabela() {
             const corpo = document.getElementById('corpoTabela');
             corpo.innerHTML = '';
             const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
             let totalMensalMinutos = 0;
+            const META_DIARIA = 480; // 8 horas em minutos
 
             Object.keys(pontos).sort().forEach(data => {
                 const p = pontos[data];
-                
-                // Função para converter HH:MM em minutos
                 const paraMinutos = (timeStr) => {
                     if (timeStr === '-') return 0;
                     const [h, m] = timeStr.split(':').map(Number);
@@ -107,9 +105,15 @@ function interagir(data, tipo) {
                 const manha = paraMinutos(p.almocoSaida) - paraMinutos(p.entrada);
                 const tarde = paraMinutos(p.saida) - paraMinutos(p.almocoRetorno);
                 const totalDia = (manha > 0 ? manha : 0) + (tarde > 0 ? tarde : 0);
+                
+                // Cálculo do saldo: Total trabalhado menos 8 horas
+                const saldoDia = totalDia - META_DIARIA;
+                const sinal = saldoDia >= 0 ? "+" : "-";
+                const absSaldo = Math.abs(saldoDia);
+                const saldoH = Math.floor(absSaldo / 60);
+                const saldoM = absSaldo % 60;
+                
                 totalMensalMinutos += totalDia;
-                const horasDia = Math.floor(totalDia / 60);
-                const minDia = totalDia % 60;
 
                 corpo.innerHTML += `<tr>
                     <td>${data}</td>
@@ -117,7 +121,9 @@ function interagir(data, tipo) {
                     <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td>
                     <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td>
                     <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td>
-                    <td>${totalDia > 0 ? horasDia + 'h ' + minDia + 'm' : '-'}</td>
+                    <td style="font-weight:bold; color:${saldoDia >= 0 ? 'green' : 'red'};">
+                        ${totalDia > 0 ? sinal + saldoH + 'h ' + saldoM + 'm' : '-'}
+                    </td>
                 </tr>`;
             });
 
@@ -125,9 +131,6 @@ function interagir(data, tipo) {
             const totalM = totalMensalMinutos % 60;
             corpo.innerHTML += `<tr>
                 <td colspan="5" style="text-align:right; font-weight:bold;">TOTAL MENSAL:</td>
-                <td style="font-weight:bold; color:green;">${totalH}h ${totalM}m</td>
+                <td style="font-weight:bold; color:blue;">${totalH}h ${totalM}m</td>
             </tr>`;
         }
-    </script>
-</body>
-</html>
