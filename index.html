@@ -1,68 +1,65 @@
 <script>
+    
     // Configuração de senha
-    const SENHA_EDICAO = "123456";
+const SENHA_EDICAO = "123456";
 
-    // Relógio em tempo real
-    setInterval(() => document.getElementById('relogio').innerText = new Date().toLocaleTimeString(), 1000);
+// Relógio em tempo real
+setInterval(() => document.getElementById('relogio').innerText = new Date().toLocaleTimeString(), 1000);
 
-    function registrar(tipo) {
-        const hoje = new Date();
-        const dataKey = hoje.toLocaleDateString();
-        let pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-        
-        if (!pontos[dataKey]) {
-            pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
-        }
-        
-        pontos[dataKey][tipo] = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        localStorage.setItem('pontos2026', JSON.stringify(pontos));
-        renderizarTabela();
+function registrar(tipo) {
+    const hoje = new Date();
+    const dataKey = hoje.toLocaleDateString();
+    let pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+    
+    if (!pontos[dataKey]) {
+        pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
     }
-
-    function editarPonto(data, tipo) {
-        const senha = prompt("Digite a senha de administrador para editar:");
-        
-        if (senha !== SENHA_EDICAO) {
-            alert("Senha incorreta!");
-            return;
-        }
-
-        const novoHorario = prompt("Digite o novo horário (ex: 08:00):");
-        
-        if (novoHorario) {
-            let pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-            if (pontos[data]) {
-                pontos[data][tipo] = novoHorario;
-                localStorage.setItem('pontos2026', JSON.stringify(pontos));
-                renderizarTabela();
-            }
-        }
-    }
-
-    function renderizarTabela() {
-        const mesEscolhido = parseInt(document.getElementById('mesSelect').value);
-        const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-        const corpo = document.getElementById('corpoTabela');
-        corpo.innerHTML = '';
-
-        // Ordena as datas para exibição correta
-        Object.keys(pontos).sort().forEach(data => {
-            const d = data.split('/');
-            if (parseInt(d[1]) - 1 === mesEscolhido) {
-                const p = pontos[data];
-                corpo.innerHTML += `
-                    <tr>
-                        <td>${d[0]}</td>
-                        <td onclick="editarPonto('${data}', 'entrada')" style="cursor:pointer; color:blue;" title="Clique para editar">${p.entrada}</td>
-                        <td onclick="editarPonto('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;" title="Clique para editar">${p.almocoSaida}</td>
-                        <td onclick="editarPonto('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;" title="Clique para editar">${p.almocoRetorno}</td>
-                        <td onclick="editarPonto('${data}', 'saida')" style="cursor:pointer; color:blue;" title="Clique para editar">${p.saida}</td>
-                    </tr>`;
-            }
-        });
-    }
-
-    // Inicialização
-    document.getElementById('mesSelect').value = new Date().getMonth();
+    
+    pontos[dataKey][tipo] = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    localStorage.setItem('pontos2026', JSON.stringify(pontos));
     renderizarTabela();
+}
+
+function editarPonto(data, tipo) {
+    const senha = prompt("Digite a senha para editar:");
+    if (senha !== SENHA_EDICAO) {
+        alert("Senha incorreta!");
+        return;
+    }
+    const novoHorario = prompt("Digite o novo horário (HH:MM):");
+    if (novoHorario) {
+        let pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+        if (pontos[data]) {
+            pontos[data][tipo] = novoHorario;
+            localStorage.setItem('pontos2026', JSON.stringify(pontos));
+            renderizarTabela();
+        }
+    }
+}
+
+function renderizarTabela() {
+    const mesEscolhido = parseInt(document.getElementById('mesSelect').value);
+    const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+    const corpo = document.getElementById('corpoTabela');
+    corpo.innerHTML = '';
+
+    Object.keys(pontos).sort().forEach(data => {
+        const d = data.split('/');
+        if (parseInt(d[1]) - 1 === mesEscolhido) {
+            const p = pontos[data];
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${d[0]}</td>
+                <td onclick="editarPonto('${data}', 'entrada')" style="cursor:pointer; color:blue;">${p.entrada}</td>
+                <td onclick="editarPonto('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td>
+                <td onclick="editarPonto('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td>
+                <td onclick="editarPonto('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td>
+            `;
+            corpo.appendChild(row);
+        }
+    });
+}
+
+document.getElementById('mesSelect').value = new Date().getMonth();
+renderizarTabela();
 </script>
