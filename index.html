@@ -51,25 +51,31 @@
 
         function renderizarTabela() {
             const corpo = document.getElementById('corpoTabela');
-            const filtroMes = document.getElementById('filtroMes').value;
+            const select = document.getElementById('filtroMes');
+            const filtroMes = select.value;
             corpo.innerHTML = '';
             const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
             let totalMensalMinutos = 0;
-            const META_DIARIA = 480;
+            const META_DIARIA = 480; 
 
-            // Atualiza o seletor de meses automaticamente
-            const select = document.getElementById('filtroMes');
-            const mesesDisponiveis = [...new Set(Object.keys(pontos).map(d => d.substring(3)))].sort();
-            
-            // Mantém apenas a opção "todos" e adiciona as encontradas
+            // Atualiza menu de meses
+            const datasRegistradas = Object.keys(pontos);
+            const mesesUnicos = [...new Set(datasRegistradas.map(d => {
+                const partes = d.split('/');
+                return partes[1] + '/' + partes[2];
+            }))].sort();
+
             select.innerHTML = '<option value="todos">Todos os meses</option>';
-            mesesDisponiveis.forEach(m => {
+            mesesUnicos.forEach(m => {
                 select.innerHTML += `<option value="${m}" ${filtroMes === m ? 'selected' : ''}>${m}</option>`;
             });
 
-            Object.keys(pontos).sort().forEach(data => {
-                const mesData = data.substring(3);
-                if (filtroMes !== "todos" && mesData !== filtroMes) return;
+            // Renderiza tabela
+            datasRegistradas.sort().forEach(data => {
+                const partes = data.split('/');
+                const mesDaLinha = partes[1] + '/' + partes[2];
+
+                if (filtroMes !== "todos" && mesDaLinha !== filtroMes) return;
 
                 const p = pontos[data];
                 const paraMinutos = (timeStr) => {
