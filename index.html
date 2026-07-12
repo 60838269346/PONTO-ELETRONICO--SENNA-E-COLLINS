@@ -88,6 +88,46 @@ function interagir(data, tipo) {
             }
         }
         renderizarTabela();
+        function renderizarTabela() {
+            const corpo = document.getElementById('corpoTabela');
+            corpo.innerHTML = '';
+            const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+            let totalMensalMinutos = 0;
+
+            Object.keys(pontos).sort().forEach(data => {
+                const p = pontos[data];
+                
+                // Função para converter HH:MM em minutos
+                const paraMinutos = (timeStr) => {
+                    if (timeStr === '-') return 0;
+                    const [h, m] = timeStr.split(':').map(Number);
+                    return h * 60 + m;
+                };
+
+                const manha = paraMinutos(p.almocoSaida) - paraMinutos(p.entrada);
+                const tarde = paraMinutos(p.saida) - paraMinutos(p.almocoRetorno);
+                const totalDia = (manha > 0 ? manha : 0) + (tarde > 0 ? tarde : 0);
+                totalMensalMinutos += totalDia;
+                const horasDia = Math.floor(totalDia / 60);
+                const minDia = totalDia % 60;
+
+                corpo.innerHTML += `<tr>
+                    <td>${data}</td>
+                    <td onclick="interagir('${data}', 'entrada')" style="cursor:pointer; color:blue;">${p.entrada}</td>
+                    <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td>
+                    <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td>
+                    <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td>
+                    <td>${totalDia > 0 ? horasDia + 'h ' + minDia + 'm' : '-'}</td>
+                </tr>`;
+            });
+
+            const totalH = Math.floor(totalMensalMinutos / 60);
+            const totalM = totalMensalMinutos % 60;
+            corpo.innerHTML += `<tr>
+                <td colspan="5" style="text-align:right; font-weight:bold;">TOTAL MENSAL:</td>
+                <td style="font-weight:bold; color:green;">${totalH}h ${totalM}m</td>
+            </tr>`;
+        }
     </script>
 </body>
 </html>
