@@ -37,10 +37,41 @@
         const SENHA = "123456";
         setInterval(() => { document.getElementById('relogio').innerText = new Date().toLocaleTimeString(); }, 1000);
 
+        function carregarDados() {
+            return JSON.parse(localStorage.getItem('pontos2026') || '{}');
+        }
+
+        function preencherFiltro() {
+            const select = document.getElementById('filtroMes');
+            const pontos = carregarDados();
+            const chaves = Object.keys(pontos);
+            
+            // Extrai meses únicos
+            const meses = new Set();
+            chaves.forEach(data => {
+                const partes = data.split('/');
+                if (partes.length === 3) {
+                    meses.add(partes[1] + '/' + partes[2]);
+                }
+            });
+
+            const valorSelecionado = select.value;
+            select.innerHTML = '<option value="todos">Todos os meses</option>';
+            
+            Array.from(meses).sort().forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.innerHTML = m;
+                select.appendChild(opt);
+            });
+            
+            select.value = valorSelecionado;
+        }
+
         function registrar(tipo) {
             const hoje = new Date();
             const dataKey = hoje.toLocaleDateString();
-            let pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+            let pontos = carregarDados();
             if (!pontos[dataKey]) {
                 pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
             }
@@ -49,32 +80,13 @@
             renderizarTabela();
         }
 
-        function preencherFiltro() {
-            const select = document.getElementById('filtroMes');
-            const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-            const datasRegistradas = Object.keys(pontos);
-            const mesesUnicos = [...new Set(datasRegistradas.map(d => {
-                const partes = d.split('/');
-                return partes[1] + '/' + partes[2];
-            }))].sort();
-
-            const valorAtual = select.value;
-            select.innerHTML = '<option value="todos">Todos os meses</option>';
-            mesesUnicos.forEach(m => {
-                select.innerHTML += `<option value="${m}">${m}</option>`;
-            });
-            select.value = valorAtual;
-        }
-
         function renderizarTabela() {
             preencherFiltro();
             const corpo = document.getElementById('corpoTabela');
             const filtroMes = document.getElementById('filtroMes').value;
+            const pontos = carregarDados();
             corpo.innerHTML = '';
-            const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-            let totalMensalMinutos = 0;
-            const META_DIARIA = 480;
-
+            
             Object.keys(pontos).sort().forEach(data => {
                 const partes = data.split('/');
                 const mesDaLinha = partes[1] + '/' + partes[2];
@@ -82,59 +94,42 @@
                 if (filtroMes !== "todos" && mesDaLinha !== filtroMes) return;
 
                 const p = pontos[data];
-                const paraMinutos = (timeStr) => {
-                    if (timeStr === '-') return 0;
-                    const [h, m] = timeStr.split(':').map(Number);
+                const paraMinutos = (t) => {
+                    if (t === '-') return 0;
+                    const [h, m] = t.split(':').map(Number);
                     return (h * 60) + m;
                 };
 
-                const manha = paraMinutos(p.almocoSaida) - paraMinutos(p.entrada);
-                const tarde = paraMinutos(p.saida) - paraMinutos(p.almocoRetorno);
-                const totalDia = (manha > 0 ? manha : 0) + (tarde > 0 ? tarde : 0);
+                const totalDia = (paraMinutos(p.almocoSaida) - paraMinutos(p.entrada)) + 
+                               (paraMinutos(p.saida) - paraMinutos(p.almocoRetorno));
                 
-                const saldoDia = totalDia - META_DIARIA;
-                const sinal = saldoDia >= 0 ? "+" : "-";
-                const absSaldo = Math.abs(saldoDia);
-                const saldoH = Math.floor(absSaldo / 60);
-                const saldoM = absSaldo % 60;
+                const saldoDia = (totalDia > 0 ? totalDia : 0) - 480;
                 
-                totalMensalMinutos += totalDia;
-
                 corpo.innerHTML += `<tr>
                     <td>${data}</td>
                     <td onclick="interagir('${data}', 'entrada')" style="cursor:pointer; color:blue;">${p.entrada}</td>
                     <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td>
                     <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td>
                     <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td>
-                    <td style="font-weight:bold; color:${saldoDia >= 0 ? 'green' : 'red'};">
-                        ${totalDia > 0 ? sinal + saldoH + 'h ' + saldoM + 'm' : '-'}
+                    <td style="color:${saldoDia >= 0 ? 'green' : 'red'}; font-weight:bold;">
+                        ${totalDia > 0 ? (saldoDia >= 0 ? '+' : '') + Math.floor(saldoDia/60) + 'h ' + (saldoDia%60) + 'm' : '-'}
                     </td>
                 </tr>`;
             });
-
-            const totalH = Math.floor(totalMensalMinutos / 60);
-            const totalM = totalMensalMinutos % 60;
-            corpo.innerHTML += `<tr>
-                <td colspan="5" style="text-align:right; font-weight:bold;">TOTAL DO PERÍODO:</td>
-                <td style="font-weight:bold; color:blue;">${totalH}h ${totalM}m</td>
-            </tr>`;
         }
 
         function interagir(data, tipo) {
-            const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-            const senhaDigitada = prompt("Senha:");
-            if (senhaDigitada !== SENHA) { alert("Senha incorreta!"); return; }
+            if (prompt("Senha:") !== SENHA) return;
             const acao = prompt("Deseja [E]ditar ou [X]cluir?", "E");
-            if (acao && acao.toUpperCase() === 'X') {
-                if (confirm("Confirmar?")) { pontos[data][tipo] = '-'; localStorage.setItem('pontos2026', JSON.stringify(pontos)); renderizarTabela(); }
-            } else if (acao && acao.toUpperCase() === 'E') {
-                const novo = prompt("Novo horário (HH:MM):", pontos[data][tipo]);
-                if (novo) { pontos[data][tipo] = novo; localStorage.setItem('pontos2026', JSON.stringify(pontos)); renderizarTabela(); }
-            }
+            let pontos = carregarDados();
+            if (acao?.toUpperCase() === 'X') pontos[data][tipo] = '-';
+            else if (acao?.toUpperCase() === 'E') pontos[data][tipo] = prompt("Novo horário:", pontos[data][tipo]);
+            localStorage.setItem('pontos2026', JSON.stringify(pontos));
+            renderizarTabela();
         }
 
-        function limparTudo() { if (prompt("Senha para apagar:") === SENHA) { localStorage.removeItem('pontos2026'); renderizarTabela(); } }
-        
+        function limparTudo() { if (prompt("Senha:") === SENHA) { localStorage.removeItem('pontos2026'); renderizarTabela(); } }
+
         preencherFiltro();
         renderizarTabela();
     </script>
