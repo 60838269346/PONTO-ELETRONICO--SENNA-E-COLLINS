@@ -49,29 +49,33 @@
             renderizarTabela();
         }
 
-        function renderizarTabela() {
-            const corpo = document.getElementById('corpoTabela');
+        function preencherFiltro() {
             const select = document.getElementById('filtroMes');
-            const filtroMes = select.value;
-            corpo.innerHTML = '';
             const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-            let totalMensalMinutos = 0;
-            const META_DIARIA = 480; 
-
-            // Atualiza menu de meses
             const datasRegistradas = Object.keys(pontos);
             const mesesUnicos = [...new Set(datasRegistradas.map(d => {
                 const partes = d.split('/');
                 return partes[1] + '/' + partes[2];
             }))].sort();
 
+            const valorAtual = select.value;
             select.innerHTML = '<option value="todos">Todos os meses</option>';
             mesesUnicos.forEach(m => {
-                select.innerHTML += `<option value="${m}" ${filtroMes === m ? 'selected' : ''}>${m}</option>`;
+                select.innerHTML += `<option value="${m}">${m}</option>`;
             });
+            select.value = valorAtual;
+        }
 
-            // Renderiza tabela
-            datasRegistradas.sort().forEach(data => {
+        function renderizarTabela() {
+            preencherFiltro();
+            const corpo = document.getElementById('corpoTabela');
+            const filtroMes = document.getElementById('filtroMes').value;
+            corpo.innerHTML = '';
+            const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+            let totalMensalMinutos = 0;
+            const META_DIARIA = 480;
+
+            Object.keys(pontos).sort().forEach(data => {
                 const partes = data.split('/');
                 const mesDaLinha = partes[1] + '/' + partes[2];
 
@@ -131,6 +135,7 @@
 
         function limparTudo() { if (prompt("Senha para apagar:") === SENHA) { localStorage.removeItem('pontos2026'); renderizarTabela(); } }
         
+        preencherFiltro();
         renderizarTabela();
     </script>
 </body>
