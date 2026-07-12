@@ -1,45 +1,77 @@
-<script>
-    const SENHA = "123456";
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Ponto Eletrônico</title>
+</head>
+<body>
+    <h1>Relógio: <span id="relogio">00:00:00</span></h1>
+    
+    <button onclick="registrar('entrada')">Entrada</button>
+    <button onclick="registrar('almocoSaida')">Saída Almoço</button>
+    <button onclick="registrar('almocoRetorno')">Retorno Almoço</button>
+    <button onclick="registrar('saida')">Saída</button>
+    <button onclick="limparTudo()" style="color:red;">Limpar Tudo</button>
 
-    // Garante que o relógio exista no HTML
-    setInterval(() => {
-        const relogio = document.getElementById('relogio');
-        if(relogio) relogio.innerText = new Date().toLocaleTimeString();
-    }, 1000);
+    <table border="1" style="margin-top:20px; width:100%;">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Entrada</th>
+                <th>Saída Almoço</th>
+                <th>Retorno Almoço</th>
+                <th>Saída</th>
+            </tr>
+        </thead>
+        <tbody id="corpoTabela"></tbody>
+    </table>
 
-    function registrar(tipo) {
-        const hoje = new Date();
-        const dataKey = hoje.toLocaleDateString();
-        let pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-        
-        if (!pontos[dataKey]) {
-            pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
+    <script>
+        const SENHA = "123456";
+
+        setInterval(() => {
+            document.getElementById('relogio').innerText = new Date().toLocaleTimeString();
+        }, 1000);
+
+        function registrar(tipo) {
+            const hoje = new Date();
+            const dataKey = hoje.toLocaleDateString();
+            let pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+            
+            if (!pontos[dataKey]) {
+                pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
+            }
+            
+            pontos[dataKey][tipo] = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            localStorage.setItem('pontos2026', JSON.stringify(pontos));
+            renderizarTabela();
         }
-        
-        pontos[dataKey][tipo] = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        localStorage.setItem('pontos2026', JSON.stringify(pontos));
+
+        function renderizarTabela() {
+            const corpo = document.getElementById('corpoTabela');
+            corpo.innerHTML = '';
+            const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+            
+            Object.keys(pontos).sort().forEach(data => {
+                const p = pontos[data];
+                corpo.innerHTML += `<tr>
+                    <td>${data}</td>
+                    <td>${p.entrada}</td>
+                    <td>${p.almocoSaida}</td>
+                    <td>${p.almocoRetorno}</td>
+                    <td>${p.saida}</td>
+                </tr>`;
+            });
+        }
+
+        function limparTudo() {
+            if (prompt("Digite a senha para apagar:") === SENHA) {
+                localStorage.removeItem('pontos2026');
+                renderizarTabela();
+            }
+        }
+
         renderizarTabela();
-    }
-
-    function renderizarTabela() {
-        const corpo = document.getElementById('corpoTabela');
-        if (!corpo) return;
-        corpo.innerHTML = '';
-        
-        const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-        
-        Object.keys(pontos).sort().forEach(data => {
-            const p = pontos[data];
-            corpo.innerHTML += `<tr>
-                <td>${data}</td>
-                <td>${p.entrada}</td>
-                <td>${p.almocoSaida}</td>
-                <td>${p.almocoRetorno}</td>
-                <td>${p.saida}</td>
-            </tr>`;
-        });
-    }
-
-    // Carrega a tabela assim que abrir
-    renderizarTabela();
-</script>
+    </script>
+</body>
+</html>
