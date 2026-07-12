@@ -1,9 +1,10 @@
 <script>
-    const SENHA_EDICAO = "123456";
+    const SENHA = "123456";
 
-    // Atualiza o relógio
+    // Garante que o relógio exista no HTML
     setInterval(() => {
-        document.getElementById('relogio').innerText = new Date().toLocaleTimeString();
+        const relogio = document.getElementById('relogio');
+        if(relogio) relogio.innerText = new Date().toLocaleTimeString();
     }, 1000);
 
     function registrar(tipo) {
@@ -20,66 +21,25 @@
         renderizarTabela();
     }
 
-    function editarPonto(data, tipo) {
-        const senha = prompt("Digite a senha para editar:");
-        if (senha !== SENHA_EDICAO) {
-            alert("Senha incorreta!");
-            return;
-        }
-        const novo = prompt("Novo horário (HH:MM):", "00:00");
-        if (novo) {
-            let pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-            if (pontos[data]) {
-                pontos[data][tipo] = novo;
-                localStorage.setItem('pontos2026', JSON.stringify(pontos));
-                renderizarTabela();
-            }
-        }
-    }
-
-    function limparDados() {
-        const senha = prompt("Digite a senha para APAGAR TODO O HISTÓRICO:");
-        if (senha === SENHA_EDICAO) {
-            if (confirm("TEM CERTEZA? Isso apagará todas as batidas registradas permanentemente.")) {
-                localStorage.removeItem('pontos2026');
-                renderizarTabela();
-                alert("Histórico apagado com sucesso!");
-            }
-        } else {
-            alert("Senha incorreta!");
-        }
-    }
-
     function renderizarTabela() {
-        const mesSelect = document.getElementById('mesSelect');
-        if (!mesSelect) return;
-        
-        const mes = parseInt(mesSelect.value);
-        const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
         const corpo = document.getElementById('corpoTabela');
-        
         if (!corpo) return;
         corpo.innerHTML = '';
         
+        const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+        
         Object.keys(pontos).sort().forEach(data => {
-            const d = data.split('/');
-            if (parseInt(d[1]) - 1 === mes) {
-                const p = pontos[data];
-                corpo.innerHTML += `<tr>
-                    <td>${d[0]}</td> 
-                    <td onclick="editarPonto('${data}','entrada')" style="cursor:pointer; color:blue;">${p.entrada}</td> 
-                    <td onclick="editarPonto('${data}','almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td> 
-                    <td onclick="editarPonto('${data}','almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td> 
-                    <td onclick="editarPonto('${data}','saida')" style="cursor:pointer; color:blue;">${p.saida}</td>
-                </tr>`;
-            }
+            const p = pontos[data];
+            corpo.innerHTML += `<tr>
+                <td>${data}</td>
+                <td>${p.entrada}</td>
+                <td>${p.almocoSaida}</td>
+                <td>${p.almocoRetorno}</td>
+                <td>${p.saida}</td>
+            </tr>`;
         });
     }
 
-    // Inicialização
-    const mesSelect = document.getElementById('mesSelect');
-    if (mesSelect) {
-        mesSelect.value = new Date().getMonth();
-    }
+    // Carrega a tabela assim que abrir
     renderizarTabela();
 </script>
