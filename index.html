@@ -14,8 +14,7 @@
 
     <div style="margin-top:20px;">
         <label for="filtroMes">Filtrar por mês:</label>
-        <!-- A mágica acontece no onclick abaixo -->
-        <select id="filtroMes" onfocus="atualizarListaMeses()" onchange="renderizarTabela()">
+        <select id="filtroMes" onchange="renderizarTabela()">
             <option value="todos">Todos os meses</option>
         </select>
     </div>
@@ -36,78 +35,102 @@
 
     <script>
         const SENHA = "123456";
+        
+        // Relógio
         setInterval(() => { document.getElementById('relogio').innerText = new Date().toLocaleTimeString(); }, 1000);
 
-        // Esta função lê o localStorage toda vez que você clica no menu
-        function atualizarListaMeses() {
-            const select = document.getElementById('filtroMes');
-            const valorAtual = select.value;
-            const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-            const meses = new Set();
-            
-            Object.keys(pontos).forEach(data => {
-                const partes = data.split('/');
-                if (partes.length === 3) meses.add(partes[1] + '/' + partes[2]);
-            });
-
-            select.innerHTML = '<option value="todos">Todos os meses</option>';
-            Array.from(meses).sort().forEach(m => {
-                select.innerHTML += `<option value="${m}">${m}</option>`;
-            });
-            select.value = valorAtual;
+        function carregarPontos() {
+            return JSON.parse(localStorage.getItem('pontos2026') || '{}');
         }
 
-        function registrar(tipo) {
-            const hoje = new Date();
-            const dataKey = hoje.toLocaleDateString();
-            let pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
-            if (!pontos[dataKey]) pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
-            pontos[dataKey][tipo] = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            localStorage.setItem('pontos2026', JSON.stringify(pontos));
-            renderizarTabela();
+        function atualizarFiltros() {
+            const select = document.getElementById('filtroMes');
+            const pontos = carregarPontos();
+            const datas = Object.keys(pontos);
+            
+            // Extrai meses únicos do formato DD/MM/AAAA
+            const meses = new Set();
+            datas.forEach(data => {
+                const partes = data.split('/');
+                if (partes.length === 3) {
+                    meses.add(partes[1] + '/' + partes[2]);
+                }
+            });
+
+            // Mantém a seleção atual se possível
+            const valorAtual = select.value;
+            select.innerHTML = '<option value="todos">Todos os meses</option>';
+            
+            Array.from(meses).sort((a, b) => {
+                const [m1, a1] = a.split('/');
+                const [m2, a2] = b.split('/');
+                return a1 - a2 || m1 - m2;
+            }).forEach(mes => {
+                const option = document.createElement('option');
+                option.value = mes;
+                option.textContent = mes;
+                select.appendChild(option);
+            });
+            
+            select.value = valorAtual;
         }
 
         function renderizarTabela() {
             const corpo = document.getElementById('corpoTabela');
-            const filtroMes = document.getElementById('filtroMes').value;
-            const pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+            const filtro = document.getElementById('filtroMes').value;
+            const pontos = carregarPontos();
             corpo.innerHTML = '';
-            
+
             Object.keys(pontos).sort().forEach(data => {
                 const partes = data.split('/');
-                const mesDaLinha = partes[1] + '/' + partes[2];
-                if (filtroMes !== "todos" && mesDaLinha !== filtroMes) return;
+                const mesData = partes[1] + '/' + partes[2];
+
+                if (filtro !== "todos" && mesData !== filtro) return;
 
                 const p = pontos[data];
-                const paraMinutos = (t) => { if (t === '-') return 0; const [h, m] = t.split(':').map(Number); return (h * 60) + m; };
-                const totalDia = (paraMinutos(p.almocoSaida) - paraMinutos(p.entrada)) + (paraMinutos(p.saida) - paraMinutos(p.almocoRetorno));
-                const saldoDia = (totalDia > 0 ? totalDia : 0) - 480;
+                const paraMin = (t) => t === '-' ? 0 : (t.split(':')[0] * 60) + parseInt(t.split(':')[1]);
                 
+                const totalDia = (paraMin(p.almocoSaida) - paraMin(p.entrada)) + (paraMin(p.saida) - paraMin(p.almocoRetorno));
+                const saldo = (totalDia > 0 ? totalDia : 0) - 480;
+
                 corpo.innerHTML += `<tr>
                     <td>${data}</td>
                     <td onclick="interagir('${data}', 'entrada')" style="cursor:pointer; color:blue;">${p.entrada}</td>
                     <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td>
                     <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td>
                     <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td>
-                    <td style="color:${saldoDia >= 0 ? 'green' : 'red'}; font-weight:bold;">
-                        ${totalDia > 0 ? (saldoDia >= 0 ? '+' : '') + Math.floor(saldoDia/60) + 'h ' + (saldoDia%60) + 'm' : '-'}
+                    <td style="color:${saldo >= 0 ? 'green' : 'red'}; font-weight:bold;">
+                        ${totalDia > 0 ? (saldo >= 0 ? '+' : '') + Math.floor(Math.abs(saldo)/60) + 'h ' + (Math.abs(saldo)%60) + 'm' : '-'}
                     </td>
                 </tr>`;
             });
         }
 
+        function registrar(tipo) {
+            const hoje = new Date();
+            const dataKey = hoje.toLocaleDateString();
+            let pontos = carregarPontos();
+            if (!pontos[dataKey]) pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
+            pontos[dataKey][tipo] = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            localStorage.setItem('pontos2026', JSON.stringify(pontos));
+            atualizarFiltros();
+            renderizarTabela();
+        }
+
         function interagir(data, tipo) {
             if (prompt("Senha:") !== SENHA) return;
             const acao = prompt("Deseja [E]ditar ou [X]cluir?", "E");
-            let pontos = JSON.parse(localStorage.getItem('pontos2026') || '{}');
+            let pontos = carregarPontos();
             if (acao?.toUpperCase() === 'X') pontos[data][tipo] = '-';
-            else if (acao?.toUpperCase() === 'E') pontos[data][tipo] = prompt("Novo horário:", pontos[data][tipo]);
+            else if (acao?.toUpperCase() === 'E') pontos[data][tipo] = prompt("Novo horário (HH:MM):", pontos[data][tipo]);
             localStorage.setItem('pontos2026', JSON.stringify(pontos));
             renderizarTabela();
         }
 
-        function limparTudo() { if (prompt("Senha:") === SENHA) { localStorage.removeItem('pontos2026'); renderizarTabela(); } }
-        
+        function limparTudo() { if (prompt("Senha:") === SENHA) { localStorage.removeItem('pontos2026'); atualizarFiltros(); renderizarTabela(); } }
+
+        // Inicialização
+        atualizarFiltros();
         renderizarTabela();
     </script>
 </body>
