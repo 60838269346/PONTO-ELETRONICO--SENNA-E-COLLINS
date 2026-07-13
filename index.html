@@ -61,7 +61,6 @@
 
             Object.keys(pontos).sort().forEach(data => {
                 const partes = data.split('/');
-                // Formata data para comparar com o filtro (MM/AAAA)
                 const mesData = partes[1] + '/' + partes[2];
 
                 if (filtro !== "todos" && mesData !== filtro) return;
@@ -85,13 +84,21 @@
             });
         }
 
+        // CORREÇÃO: Força o filtro para "todos" antes de registrar para não esconder o ponto novo
         function registrar(tipo) {
             const hoje = new Date();
             const dataKey = hoje.toLocaleDateString();
             let pontos = carregarPontos();
-            if (!pontos[dataKey]) pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
+            
+            if (!pontos[dataKey]) {
+                pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
+            }
+            
             pontos[dataKey][tipo] = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             localStorage.setItem('pontos2026', JSON.stringify(pontos));
+            
+            // Força a exibição de todos os dados após o registro
+            document.getElementById('filtroMes').value = 'todos';
             renderizarTabela();
         }
 
