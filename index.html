@@ -16,6 +16,18 @@
         <label for="filtroMes">Filtrar por mês:</label>
         <select id="filtroMes" onchange="renderizarTabela()">
             <option value="todos">Todos os meses</option>
+            <option value="01/2026">01/2026</option>
+            <option value="02/2026">02/2026</option>
+            <option value="03/2026">03/2026</option>
+            <option value="04/2026">04/2026</option>
+            <option value="05/2026">05/2026</option>
+            <option value="06/2026">06/2026</option>
+            <option value="07/2026">07/2026</option>
+            <option value="08/2026">08/2026</option>
+            <option value="09/2026">09/2026</option>
+            <option value="10/2026">10/2026</option>
+            <option value="11/2026">11/2026</option>
+            <option value="12/2026">12/2026</option>
         </select>
     </div>
 
@@ -35,44 +47,10 @@
 
     <script>
         const SENHA = "123456";
-        
-        // Relógio
         setInterval(() => { document.getElementById('relogio').innerText = new Date().toLocaleTimeString(); }, 1000);
 
         function carregarPontos() {
             return JSON.parse(localStorage.getItem('pontos2026') || '{}');
-        }
-
-        function atualizarFiltros() {
-            const select = document.getElementById('filtroMes');
-            const pontos = carregarPontos();
-            const datas = Object.keys(pontos);
-            
-            // Extrai meses únicos do formato DD/MM/AAAA
-            const meses = new Set();
-            datas.forEach(data => {
-                const partes = data.split('/');
-                if (partes.length === 3) {
-                    meses.add(partes[1] + '/' + partes[2]);
-                }
-            });
-
-            // Mantém a seleção atual se possível
-            const valorAtual = select.value;
-            select.innerHTML = '<option value="todos">Todos os meses</option>';
-            
-            Array.from(meses).sort((a, b) => {
-                const [m1, a1] = a.split('/');
-                const [m2, a2] = b.split('/');
-                return a1 - a2 || m1 - m2;
-            }).forEach(mes => {
-                const option = document.createElement('option');
-                option.value = mes;
-                option.textContent = mes;
-                select.appendChild(option);
-            });
-            
-            select.value = valorAtual;
         }
 
         function renderizarTabela() {
@@ -83,6 +61,7 @@
 
             Object.keys(pontos).sort().forEach(data => {
                 const partes = data.split('/');
+                // Formata data para comparar com o filtro (MM/AAAA)
                 const mesData = partes[1] + '/' + partes[2];
 
                 if (filtro !== "todos" && mesData !== filtro) return;
@@ -113,7 +92,6 @@
             if (!pontos[dataKey]) pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
             pontos[dataKey][tipo] = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             localStorage.setItem('pontos2026', JSON.stringify(pontos));
-            atualizarFiltros();
             renderizarTabela();
         }
 
@@ -127,10 +105,8 @@
             renderizarTabela();
         }
 
-        function limparTudo() { if (prompt("Senha:") === SENHA) { localStorage.removeItem('pontos2026'); atualizarFiltros(); renderizarTabela(); } }
+        function limparTudo() { if (prompt("Senha:") === SENHA) { localStorage.removeItem('pontos2026'); renderizarTabela(); } }
 
-        // Inicialização
-        atualizarFiltros();
         renderizarTabela();
     </script>
 </body>
