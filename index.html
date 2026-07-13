@@ -66,7 +66,6 @@
 
                 const p = pontos[data];
                 const paraMin = (t) => t === '-' ? 0 : (parseInt(t.split(':')[0]) * 60) + parseInt(t.split(':')[1]);
-                
                 const saidaMin = paraMin(p.saida);
                 const diaSemana = new Date(data.split('/').reverse().join('-')).getDay();
                 
@@ -91,10 +90,10 @@
 
                 corpo.innerHTML += `<tr>
                     <td>${data}</td>
-                    <td>${p.entrada}</td>
-                    <td>${p.almocoSaida}</td>
-                    <td>${p.almocoRetorno}</td>
-                    <td>${p.saida}</td>
+                    <td onclick="interagir('${data}', 'entrada')" style="cursor:pointer; color:blue;">${p.entrada}</td>
+                    <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td>
+                    <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td>
+                    <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td>
                     <td style="color:${cor}; font-weight:bold;">${status}</td>
                 </tr>`;
             });
