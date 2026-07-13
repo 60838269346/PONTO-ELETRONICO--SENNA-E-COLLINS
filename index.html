@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Ponto Eletrônico</title>
+    <title>Ponto Eletrônico 44h</title>
 </head>
 <body>
     <h1>Relógio: <span id="relogio">00:00:00</span></h1>
@@ -39,7 +39,7 @@
                 <th>Saída Almoço</th>
                 <th>Retorno Almoço</th>
                 <th>Saída</th>
-                <th>Saldo (vs 8h)</th>
+                <th>Saldo (vs 8h48m)</th>
             </tr>
         </thead>
         <tbody id="corpoTabela"></tbody>
@@ -63,9 +63,17 @@
                 if (filtro !== "todos" && mesData !== filtro) return;
 
                 const p = pontos[data];
-                const paraMin = (t) => t === '-' ? 0 : (t.split(':')[0] * 60) + parseInt(t.split(':')[1]);
+                const paraMin = (t) => t === '-' ? 0 : (parseInt(t.split(':')[0]) * 60) + parseInt(t.split(':')[1]);
+                
+                // Cálculo: (Saída Almoço - Entrada) + (Saída - Retorno Almoço)
                 const totalDia = (paraMin(p.almocoSaida) - paraMin(p.entrada)) + (paraMin(p.saida) - paraMin(p.almocoRetorno));
-                const saldo = (totalDia > 0 ? totalDia : 0) - 480;
+                
+                // Meta diária para 44h semanais = 528 minutos (8h 48m)
+                // Se for domingo (dia da semana 0), a meta é 0 para não gerar saldo negativo
+                const diaSemana = new Date(data.split('/').reverse().join('-')).getDay();
+                const meta = (diaSemana === 0) ? 0 : 528;
+                
+                const saldo = (totalDia > 0 ? totalDia : 0) - meta;
 
                 corpo.innerHTML += `<tr>
                     <td>${data}</td>
@@ -73,8 +81,8 @@
                     <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td>
                     <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td>
                     <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td>
-                    <td style="color:${saldo >= 0 ? 'green' : 'red'}; font-weight:bold;">
-                        ${totalDia > 0 ? (saldo >= 0 ? '+' : '') + Math.floor(Math.abs(saldo)/60) + 'h ' + (Math.abs(saldo)%60) + 'm' : '-'}
+                    <td style="color:${diaSemana === 0 ? 'black' : (saldo >= 0 ? 'green' : 'red')}; font-weight:bold;">
+                        ${totalDia > 0 || diaSemana === 0 ? (diaSemana === 0 ? 'Folga' : (saldo >= 0 ? '+' : '') + Math.floor(Math.abs(saldo)/60) + 'h ' + (Math.abs(saldo)%60) + 'm') : '-'}
                     </td>
                 </tr>`;
             });
