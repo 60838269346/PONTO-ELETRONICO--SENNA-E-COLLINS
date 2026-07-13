@@ -53,13 +53,13 @@
 
         function carregarPontos() { return JSON.parse(localStorage.getItem('pontos2026') || '{}'); }
 
-       function renderizarTabela() {
+        function renderizarTabela() {
             const corpo = document.getElementById('corpoTabela');
             const filtro = document.getElementById('filtroMes').value;
             const pontos = carregarPontos();
             corpo.innerHTML = '';
             
-            let saldoMensal = 0; // Variável para acumular o saldo do mês
+            let saldoMensal = 0;
 
             Object.keys(pontos).sort().forEach(data => {
                 const partes = data.split('/');
@@ -78,7 +78,7 @@
                     status = "Folga";
                 } else if (saidaMin > 0) {
                     const extra = saidaMin - JORNADA_FIM;
-                    saldoMensal += extra; // Soma/Subtrai do acumulado
+                    saldoMensal += extra;
                     
                     if (extra > 0) {
                         status = "Extra: " + Math.floor(extra/60) + "h " + (extra%60) + "m";
@@ -102,7 +102,6 @@
                 </tr>`;
             });
 
-            // Adiciona a linha de acumulado no final da tabela
             const sinal = saldoMensal >= 0 ? '+' : '';
             corpo.innerHTML += `<tr style="background-color: #f0f0f0;">
                 <td colspan="5" style="text-align:right; font-weight:bold;">Saldo Acumulado do Mês:</td>
@@ -111,3 +110,30 @@
                 </td>
             </tr>`;
         }
+
+        function registrar(tipo) {
+            const hoje = new Date();
+            const dataKey = hoje.toLocaleDateString();
+            let pontos = carregarPontos();
+            if (!pontos[dataKey]) pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
+            pontos[dataKey][tipo] = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            localStorage.setItem('pontos2026', JSON.stringify(pontos));
+            renderizarTabela();
+        }
+
+        function interagir(data, tipo) {
+            if (prompt("Senha:") !== SENHA) return;
+            const acao = prompt("Deseja [E]ditar ou [X]cluir?", "E");
+            let pontos = carregarPontos();
+            if (acao?.toUpperCase() === 'X') pontos[data][tipo] = '-';
+            else if (acao?.toUpperCase() === 'E') pontos[data][tipo] = prompt("Novo horário (HH:MM):", pontos[data][tipo]);
+            localStorage.setItem('pontos2026', JSON.stringify(pontos));
+            renderizarTabela();
+        }
+
+        function limparTudo() { if (prompt("Senha:") === SENHA) { localStorage.removeItem('pontos2026'); renderizarTabela(); } }
+
+        renderizarTabela();
+    </script>
+</body>
+</html>
