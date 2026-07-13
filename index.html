@@ -39,7 +39,7 @@
                 <th>Saída Almoço</th>
                 <th>Retorno Almoço</th>
                 <th>Saída</th>
-                <th>Saldo (vs 8h48m)</th>
+                <th>Status do Dia</th>
             </tr>
         </thead>
         <tbody id="corpoTabela"></tbody>
@@ -47,6 +47,8 @@
 
     <script>
         const SENHA = "123456";
+        const JORNADA_FIM = 16 * 60 + 20; // 16:20 em minutos
+        
         setInterval(() => { document.getElementById('relogio').innerText = new Date().toLocaleTimeString(); }, 1000);
 
         function carregarPontos() { return JSON.parse(localStorage.getItem('pontos2026') || '{}'); }
@@ -65,25 +67,35 @@
                 const p = pontos[data];
                 const paraMin = (t) => t === '-' ? 0 : (parseInt(t.split(':')[0]) * 60) + parseInt(t.split(':')[1]);
                 
-                // Cálculo: (Saída Almoço - Entrada) + (Saída - Retorno Almoço)
-                const totalDia = (paraMin(p.almocoSaida) - paraMin(p.entrada)) + (paraMin(p.saida) - paraMin(p.almocoRetorno));
-                
-                // Meta diária para 44h semanais = 528 minutos (8h 48m)
-                // Se for domingo (dia da semana 0), a meta é 0 para não gerar saldo negativo
+                const saidaMin = paraMin(p.saida);
                 const diaSemana = new Date(data.split('/').reverse().join('-')).getDay();
-                const meta = (diaSemana === 0) ? 0 : 528;
                 
-                const saldo = (totalDia > 0 ? totalDia : 0) - meta;
+                let status = "-";
+                let cor = "black";
+
+                if (diaSemana === 0) {
+                    status = "Folga";
+                } else if (saidaMin > 0) {
+                    const extra = saidaMin - JORNADA_FIM;
+                    if (extra > 0) {
+                        status = "Extra: " + Math.floor(extra/60) + "h " + (extra%60) + "m";
+                        cor = "blue";
+                    } else if (extra < 0) {
+                        status = "Falta: " + Math.floor(Math.abs(extra)/60) + "h " + (Math.abs(extra)%60) + "m";
+                        cor = "red";
+                    } else {
+                        status = "No horário";
+                        cor = "green";
+                    }
+                }
 
                 corpo.innerHTML += `<tr>
                     <td>${data}</td>
-                    <td onclick="interagir('${data}', 'entrada')" style="cursor:pointer; color:blue;">${p.entrada}</td>
-                    <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td>
-                    <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td>
-                    <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td>
-                    <td style="color:${diaSemana === 0 ? 'black' : (saldo >= 0 ? 'green' : 'red')}; font-weight:bold;">
-                        ${totalDia > 0 || diaSemana === 0 ? (diaSemana === 0 ? 'Folga' : (saldo >= 0 ? '+' : '') + Math.floor(Math.abs(saldo)/60) + 'h ' + (Math.abs(saldo)%60) + 'm') : '-'}
-                    </td>
+                    <td>${p.entrada}</td>
+                    <td>${p.almocoSaida}</td>
+                    <td>${p.almocoRetorno}</td>
+                    <td>${p.saida}</td>
+                    <td style="color:${cor}; font-weight:bold;">${status}</td>
                 </tr>`;
             });
         }
