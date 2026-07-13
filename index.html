@@ -49,25 +49,21 @@
         const SENHA = "123456";
         setInterval(() => { document.getElementById('relogio').innerText = new Date().toLocaleTimeString(); }, 1000);
 
-        function carregarPontos() {
-            return JSON.parse(localStorage.getItem('pontos2026') || '{}');
-        }
+        function carregarPontos() { return JSON.parse(localStorage.getItem('pontos2026') || '{}'); }
 
         function renderizarTabela() {
             const corpo = document.getElementById('corpoTabela');
             const filtro = document.getElementById('filtroMes').value;
             const pontos = carregarPontos();
             corpo.innerHTML = '';
-
+            
             Object.keys(pontos).sort().forEach(data => {
                 const partes = data.split('/');
                 const mesData = partes[1] + '/' + partes[2];
-
                 if (filtro !== "todos" && mesData !== filtro) return;
 
                 const p = pontos[data];
                 const paraMin = (t) => t === '-' ? 0 : (t.split(':')[0] * 60) + parseInt(t.split(':')[1]);
-                
                 const totalDia = (paraMin(p.almocoSaida) - paraMin(p.entrada)) + (paraMin(p.saida) - paraMin(p.almocoRetorno));
                 const saldo = (totalDia > 0 ? totalDia : 0) - 480;
 
@@ -84,21 +80,13 @@
             });
         }
 
-        // CORREÇÃO: Força o filtro para "todos" antes de registrar para não esconder o ponto novo
         function registrar(tipo) {
             const hoje = new Date();
             const dataKey = hoje.toLocaleDateString();
             let pontos = carregarPontos();
-            
-            if (!pontos[dataKey]) {
-                pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
-            }
-            
+            if (!pontos[dataKey]) pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
             pontos[dataKey][tipo] = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             localStorage.setItem('pontos2026', JSON.stringify(pontos));
-            
-            // Força a exibição de todos os dados após o registro
-            document.getElementById('filtroMes').value = 'todos';
             renderizarTabela();
         }
 
