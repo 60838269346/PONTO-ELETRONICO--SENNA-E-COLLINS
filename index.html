@@ -76,34 +76,42 @@
             corpo.innerHTML = '';
             let saldoMensal = 0;
 
-            Object.keys(pontos).sort().forEach(data => {
+            Object.keys(pontos).sort((a, b) => {
+                const [d1, m1, y1] = a.split('/').map(Number);
+                const [d2, m2, y2] = b.split('/').map(Number);
+                return new Date(y1, m1 - 1, d1) - new Date(y2, m2 - 1, d2);
+            }).forEach(data => {
                 const partes = data.split('/');
                 const mesData = partes[1] + '/' + partes[2];
                 if (filtro !== "todos" && mesData !== filtro) return;
 
                 const p = pontos[data];
-                const paraMin = (t) => t === '-' ? 0 : (parseInt(t.split(':')[0]) * 60) + parseInt(t.split(':')[1]);
+                const paraMin = (t) => (t === '-' || !t) ? 0 : (parseInt(t.split(':')[0]) * 60) + parseInt(t.split(':')[1]);
                 const saidaMin = paraMin(p.saida);
-                const diaSemana = new Date(data.split('/').reverse().join('-')).getDay();
+                
+                const [d, m, y] = data.split('/').map(Number);
+                const diaSemana = new Date(y, m - 1, d).getDay();
                 
                 let status = "-";
                 let cor = "black";
 
-                // Apenas domingo é marcado como Folga automaticamente
-                if (diaSemana === 0) {
+                // Lógica mantida: só marca "Folga" se for domingo e sem marcação de ponto
+                if (diaSemana === 0 && p.entrada === '-') {
                     status = "Folga";
-                } else if (saidaMin > 0) {
-                    const extra = saidaMin - JORNADA_FIM;
-                    saldoMensal += extra;
-                    if (extra > 0) {
-                        status = "Extra: " + Math.floor(extra/60) + "h " + (extra%60) + "m";
-                        cor = "blue";
-                    } else if (extra < 0) {
-                        status = "Falta: " + Math.floor(Math.abs(extra)/60) + "h " + (Math.abs(extra)%60) + "m";
-                        cor = "red";
-                    } else {
-                        status = "No horário";
-                        cor = "green";
+                } else if (p.entrada !== '-') {
+                    if (saidaMin > 0) {
+                        const extra = saidaMin - JORNADA_FIM;
+                        saldoMensal += extra;
+                        if (extra > 0) {
+                            status = "Extra: " + Math.floor(extra/60) + "h " + (extra%60) + "m";
+                            cor = "blue";
+                        } else if (extra < 0) {
+                            status = "Falta: " + Math.floor(Math.abs(extra)/60) + "h " + (Math.abs(extra)%60) + "m";
+                            cor = "red";
+                        } else {
+                            status = "No horário";
+                            cor = "green";
+                        }
                     }
                 }
                 
