@@ -5,7 +5,9 @@
     <title>Ponto Eletrônico 44h</title>
 </head>
 <body>
+    <h1>Colaborador: Jonh Henrique Sena da Silva</h1>
     <h1>Relógio: <span id="relogio">00:00:00</span></h1>
+    
     <button onclick="registrar('entrada')">Entrada</button>
     <button onclick="registrar('almocoSaida')">Saída Almoço</button>
     <button onclick="registrar('almocoRetorno')">Retorno Almoço</button>
@@ -47,25 +49,28 @@
 
     <script>
         const SENHA = "123456";
-        const JORNADA_FIM = 16 * 60 + 20; // 16:20 em minutos
-        
-        setInterval(() => { document.getElementById('relogio').innerText = new Date().toLocaleTimeString(); }, 1000);
+        const JORNADA_FIM = 16 * 60 + 20; 
 
-        function carregarPontos() { return JSON.parse(localStorage.getItem('pontos2026') || '{}'); }
+        setInterval(() => {
+            document.getElementById('relogio').innerText = new Date().toLocaleTimeString();
+        }, 1000);
+
+        function carregarPontos() {
+            return JSON.parse(localStorage.getItem('pontos2026') || '{}');
+        }
 
         function renderizarTabela() {
             const corpo = document.getElementById('corpoTabela');
             const filtro = document.getElementById('filtroMes').value;
             const pontos = carregarPontos();
             corpo.innerHTML = '';
-            
             let saldoMensal = 0;
 
             Object.keys(pontos).sort().forEach(data => {
                 const partes = data.split('/');
                 const mesData = partes[1] + '/' + partes[2];
                 if (filtro !== "todos" && mesData !== filtro) return;
-
+                
                 const p = pontos[data];
                 const paraMin = (t) => t === '-' ? 0 : (parseInt(t.split(':')[0]) * 60) + parseInt(t.split(':')[1]);
                 const saidaMin = paraMin(p.saida);
@@ -73,13 +78,12 @@
                 
                 let status = "-";
                 let cor = "black";
-
+                
                 if (diaSemana === 0) {
                     status = "Folga";
                 } else if (saidaMin > 0) {
                     const extra = saidaMin - JORNADA_FIM;
                     saldoMensal += extra;
-                    
                     if (extra > 0) {
                         status = "Extra: " + Math.floor(extra/60) + "h " + (extra%60) + "m";
                         cor = "blue";
@@ -92,23 +96,11 @@
                     }
                 }
 
-                corpo.innerHTML += `<tr>
-                    <td>${data}</td>
-                    <td onclick="interagir('${data}', 'entrada')" style="cursor:pointer; color:blue;">${p.entrada}</td>
-                    <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td>
-                    <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td>
-                    <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td>
-                    <td style="color:${cor}; font-weight:bold;">${status}</td>
-                </tr>`;
+                corpo.innerHTML += `<tr> <td>${data}</td> <td onclick="interagir('${data}', 'entrada')" style="cursor:pointer; color:blue;">${p.entrada}</td> <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td> <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td> <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td> <td style="color:${cor}; font-weight:bold;">${status}</td> </tr>`;
             });
 
             const sinal = saldoMensal >= 0 ? '+' : '';
-            corpo.innerHTML += `<tr style="background-color: #f0f0f0;">
-                <td colspan="5" style="text-align:right; font-weight:bold;">Saldo Acumulado do Mês:</td>
-                <td style="color:${saldoMensal >= 0 ? 'blue' : 'red'}; font-weight:bold;">
-                    ${sinal}${Math.floor(Math.abs(saldoMensal)/60)}h ${Math.abs(saldoMensal)%60}m
-                </td>
-            </tr>`;
+            corpo.innerHTML += `<tr style="background-color: #f0f0f0;"> <td colspan="5" style="text-align:right; font-weight:bold;">Saldo Acumulado do Mês:</td> <td style="color:${saldoMensal >= 0 ? 'blue' : 'red'}; font-weight:bold;"> ${sinal}${Math.floor(Math.abs(saldoMensal)/60)}h ${Math.abs(saldoMensal)%60}m </td> </tr>`;
         }
 
         function registrar(tipo) {
@@ -131,9 +123,16 @@
             renderizarTabela();
         }
 
-        function limparTudo() { if (prompt("Senha:") === SENHA) { localStorage.removeItem('pontos2026'); renderizarTabela(); } }
+        function limparTudo() {
+            if (prompt("Senha:") === SENHA) {
+                localStorage.removeItem('pontos2026');
+                renderizarTabela();
+            }
+        }
 
         renderizarTabela();
     </script>
 </body>
 </html>
+       
+         
