@@ -12,6 +12,7 @@
     <button onclick="registrar('almocoSaida')">Saída Almoço</button>
     <button onclick="registrar('almocoRetorno')">Retorno Almoço</button>
     <button onclick="registrar('saida')">Saída</button>
+    <button onclick="adicionarRetroativo()" style="background-color: yellow;">Incluir Retroativo</button>
     <button onclick="limparTudo()" style="color:red;">Limpar Tudo</button>
 
     <div style="margin-top:20px;">
@@ -57,6 +58,21 @@
 
         function carregarPontos() {
             return JSON.parse(localStorage.getItem('pontos2026') || '{}');
+        }
+
+        function adicionarRetroativo() {
+            if (prompt("Senha:") !== SENHA) return;
+            const data = prompt("Digite a data (dd/mm/aaaa):");
+            if (!data) return;
+
+            let pontos = carregarPontos();
+            if (!pontos[data]) {
+                pontos[data] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
+                localStorage.setItem('pontos2026', JSON.stringify(pontos));
+                renderizarTabela();
+            } else {
+                alert("Essa data já existe! Edite clicando no horário da tabela.");
+            }
         }
 
         function renderizarTabela() {
@@ -134,5 +150,3 @@
     </script>
 </body>
 </html>
-       
-         
