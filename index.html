@@ -7,7 +7,6 @@
 <body>
     <h1>Colaborador: Jonh Henrique Sena da Silva</h1>
     <h1>Relógio: <span id="relogio">00:00:00</span></h1>
-    
     <button onclick="registrar('entrada')">Entrada</button>
     <button onclick="registrar('almocoSaida')">Saída Almoço</button>
     <button onclick="registrar('almocoRetorno')">Retorno Almoço</button>
@@ -50,21 +49,16 @@
 
     <script>
         const SENHA = "123456";
-        const JORNADA_FIM = 16 * 60 + 20; 
+        const JORNADA_FIM = 16 * 60 + 20;
 
-        setInterval(() => {
-            document.getElementById('relogio').innerText = new Date().toLocaleTimeString();
-        }, 1000);
+        setInterval(() => { document.getElementById('relogio').innerText = new Date().toLocaleTimeString(); }, 1000);
 
-        function carregarPontos() {
-            return JSON.parse(localStorage.getItem('pontos2026') || '{}');
-        }
+        function carregarPontos() { return JSON.parse(localStorage.getItem('pontos2026') || '{}'); }
 
         function adicionarRetroativo() {
             if (prompt("Senha:") !== SENHA) return;
             const data = prompt("Digite a data (dd/mm/aaaa):");
             if (!data) return;
-
             let pontos = carregarPontos();
             if (!pontos[data]) {
                 pontos[data] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
@@ -86,7 +80,7 @@
                 const partes = data.split('/');
                 const mesData = partes[1] + '/' + partes[2];
                 if (filtro !== "todos" && mesData !== filtro) return;
-                
+
                 const p = pontos[data];
                 const paraMin = (t) => t === '-' ? 0 : (parseInt(t.split(':')[0]) * 60) + parseInt(t.split(':')[1]);
                 const saidaMin = paraMin(p.saida);
@@ -94,7 +88,8 @@
                 
                 let status = "-";
                 let cor = "black";
-                
+
+                // Apenas domingo é marcado como Folga automaticamente
                 if (diaSemana === 0) {
                     status = "Folga";
                 } else if (saidaMin > 0) {
@@ -111,7 +106,7 @@
                         cor = "green";
                     }
                 }
-
+                
                 corpo.innerHTML += `<tr> <td>${data}</td> <td onclick="interagir('${data}', 'entrada')" style="cursor:pointer; color:blue;">${p.entrada}</td> <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td> <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td> <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td> <td style="color:${cor}; font-weight:bold;">${status}</td> </tr>`;
             });
 
