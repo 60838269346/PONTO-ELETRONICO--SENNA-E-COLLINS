@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Ponto Eletrônico 44h</title>
+    <!-- Importação do cliente do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <h1>Colaborador: Jonh Henrique Sena da Silva</h1>
     <h1>Relógio: <span id="relogio">00:00:00</span></h1>
+    
     <button onclick="registrar('entrada')">Entrada</button>
     <button onclick="registrar('almocoSaida')">Saída Almoço</button>
     <button onclick="registrar('almocoRetorno')">Retorno Almoço</button>
@@ -48,31 +51,43 @@
     </table>
 
     <script>
+        // Configuração do Supabase (Substitua com as credenciais do seu projeto)
+        const SUPABASE_URL = 'SUA_URL_DO_SUPABASE';
+        const SUPABASE_ANON_KEY = 'SUA_CHAVE_ANON_DO_SUPABASE';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         const SENHA = "123456";
         const JORNADA_FIM = 16 * 60 + 20;
 
-        setInterval(() => { document.getElementById('relogio').innerText = new Date().toLocaleTimeString(); }, 1000);
+        // Relógio em tempo real
+        setInterval(() => {
+            document.getElementById('relogio').innerText = new Date().toLocaleTimeString();
+        }, 1000);
 
-        function carregarPontos() { return JSON.parse(localStorage.getItem('pontos2026') || '{}'); }
-
-        function adicionarRetroativo() {
-            if (prompt("Senha:") !== SENHA) return;
-            const data = prompt("Digite a data (dd/mm/aaaa):");
-            if (!data) return;
-            let pontos = carregarPontos();
-            if (!pontos[data]) {
-                pontos[data] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
-                localStorage.setItem('pontos2026', JSON.stringify(pontos));
-                renderizarTabela();
-            } else {
-                alert("Essa data já existe! Edite clicando no horário da tabela.");
+        // Carrega os dados assincronamente da tabela do banco de dados
+        async function carregarPontosDoBanco() {
+            const { data, error } = await supabase.from('pontos').select('*');
+            if (error) {
+                console.error('Erro ao carregar pontos:', error);
+                return {};
             }
+            const pontosObj = {};
+            data.forEach(row => {
+                pontosObj[row.data] = {
+                    entrada: row.entrada,
+                    almocoSaida: row.almoco_saida,
+                    almocoRetorno: row.almoco_retorno,
+                    saida: row.saida
+                };
+            });
+            return pontosObj;
         }
 
-        function renderizarTabela() {
+        async function renderizarTabela() {
             const corpo = document.getElementById('corpoTabela');
             const filtro = document.getElementById('filtroMes').value;
-            const pontos = carregarPontos();
+            const pontos = await carregarPontosDoBanco();
+            
             corpo.innerHTML = '';
             let saldoMensal = 0;
 
@@ -88,14 +103,12 @@
                 const p = pontos[data];
                 const paraMin = (t) => (t === '-' || !t) ? 0 : (parseInt(t.split(':')[0]) * 60) + parseInt(t.split(':')[1]);
                 const saidaMin = paraMin(p.saida);
-                
                 const [d, m, y] = data.split('/').map(Number);
                 const diaSemana = new Date(y, m - 1, d).getDay();
                 
                 let status = "-";
                 let cor = "black";
 
-                // Lógica mantida: só marca "Folga" se for domingo e sem marcação de ponto
                 if (diaSemana === 0 && p.entrada === '-') {
                     status = "Folga";
                 } else if (p.entrada !== '-') {
@@ -114,41 +127,99 @@
                         }
                     }
                 }
-                
-                corpo.innerHTML += `<tr> <td>${data}</td> <td onclick="interagir('${data}', 'entrada')" style="cursor:pointer; color:blue;">${p.entrada}</td> <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td> <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td> <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td> <td style="color:${cor}; font-weight:bold;">${status}</td> </tr>`;
+
+                corpo.innerHTML += `<tr>
+                    <td>${data}</td>
+                    <td onclick="interagir('${data}', 'entrada')" style="cursor:pointer; color:blue;">${p.entrada}</td>
+                    <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td>
+                    <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td>
+                    <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td>
+                    <td style="color:${cor}; font-weight:bold;">${status}</td>
+                </tr>`;
             });
 
             const sinal = saldoMensal >= 0 ? '+' : '';
-            corpo.innerHTML += `<tr style="background-color: #f0f0f0;"> <td colspan="5" style="text-align:right; font-weight:bold;">Saldo Acumulado do Mês:</td> <td style="color:${saldoMensal >= 0 ? 'blue' : 'red'}; font-weight:bold;"> ${sinal}${Math.floor(Math.abs(saldoMensal)/60)}h ${Math.abs(saldoMensal)%60}m </td> </tr>`;
+            corpo.innerHTML += `<tr style="background-color: #f0f0f0;">
+                <td colspan="5" style="text-align:right; font-weight:bold;">Saldo Acumulado do Mês:</td>
+                <td style="color:${saldoMensal >= 0 ? 'blue' : 'red'}; font-weight:bold;">
+                    ${sinal}${Math.floor(Math.abs(saldoMensal)/60)}h ${Math.abs(saldoMensal)%60}m
+                </td>
+            </tr>`;
         }
 
-        function registrar(tipo) {
+        async function registrar(tipo) {
             const hoje = new Date();
             const dataKey = hoje.toLocaleDateString();
-            let pontos = carregarPontos();
-            if (!pontos[dataKey]) pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
-            pontos[dataKey][tipo] = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            localStorage.setItem('pontos2026', JSON.stringify(pontos));
+            const horaAtual = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            const campoBanco = {
+                'entrada': 'entrada',
+                'almocoSaida': 'almoco_saida',
+                'almocoRetorno': 'almoco_retorno',
+                'saida': 'saida'
+            }[tipo];
+
+            const { data: existente } = await supabase.from('pontos').select('*').eq('data', dataKey).single();
+
+            if (!existente) {
+                const novoRegistro = { data: dataKey, entrada: '-', almoco_saida: '-', almoco_retorno: '-', saida: '-' };
+                novoRegistro[campoBanco] = horaAtual;
+                await supabase.from('pontos').insert([novoRegistro]);
+            } else {
+                const atualizacao = {};
+                atualizacao[campoBanco] = horaAtual;
+                await supabase.from('pontos').update(atualizacao).eq('data', dataKey);
+            }
+
             renderizarTabela();
         }
 
-        function interagir(data, tipo) {
+        async function adicionarRetroativo() {
+            if (prompt("Senha:") !== SENHA) return;
+            const data = prompt("Digite a data (dd/mm/aaaa):");
+            if (!data) return;
+
+            const { data: existente } = await supabase.from('pontos').select('*').eq('data', data).single();
+            if (!existente) {
+                await supabase.from('pontos').insert([{ data: data, entrada: '-', almoco_saida: '-', almoco_retorno: '-', saida: '-' }]);
+                renderizarTabela();
+            } else {
+                alert("Essa data já existe! Edite clicando no horário da tabela.");
+            }
+        }
+
+        async function interagir(data, tipo) {
             if (prompt("Senha:") !== SENHA) return;
             const acao = prompt("Deseja [E]ditar ou [X]cluir?", "E");
-            let pontos = carregarPontos();
-            if (acao?.toUpperCase() === 'X') pontos[data][tipo] = '-';
-            else if (acao?.toUpperCase() === 'E') pontos[data][tipo] = prompt("Novo horário (HH:MM):", pontos[data][tipo]);
-            localStorage.setItem('pontos2026', JSON.stringify(pontos));
+            if (!acao) return;
+
+            const campoBanco = {
+                'entrada': 'entrada',
+                'almocoSaida': 'almoco_saida',
+                'almocoRetorno': 'almoco_retorno',
+                'saida': 'saida'
+            }[tipo];
+
+            let novoHorario = '-';
+            if (acao.toUpperCase() === 'E') {
+                novoHorario = prompt("Novo horário (HH:MM):", "-");
+                if (!novoHorario) return;
+            }
+
+            const atualizacao = {};
+            atualizacao[campoBanco] = novoHorario;
+            await supabase.from('pontos').update(atualizacao).eq('data', data);
             renderizarTabela();
         }
 
-        function limparTudo() {
+        async function limparTudo() {
             if (prompt("Senha:") === SENHA) {
-                localStorage.removeItem('pontos2026');
+                await supabase.from('pontos').delete().neq('id', 0);
                 renderizarTabela();
             }
         }
 
+        // Executa a renderização inicial ao carregar a página
         renderizarTabela();
     </script>
 </body>
