@@ -3,50 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <title>Ponto Eletrônico 44h</title>
+    <!-- Biblioteca leve necessária apenas para gerar o PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
-    <h1>Colaborador: Jonh Henrique Sena da Silva</h1>
-    <h1>Relógio: <span id="relogio">00:00:00</span></h1>
-    
-    <button onclick="registrar('entrada')">Entrada</button>
-    <button onclick="registrar('almocoSaida')">Saída Almoço</button>
-    <button onclick="registrar('almocoRetorno')">Retorno Almoço</button>
-    <button onclick="registrar('saida')">Saída</button>
-    <button onclick="adicionarRetroativo()" style="background-color: yellow;">Incluir Retroativo</button>
-    <button onclick="limparTudo()" style="color:red;">Limpar Tudo</button>
+    <div id="conteudoRelatorio">
+        <h1>Colaborador: Jonh Henrique Sena da Silva</h1>
+        <h1>Relógio: <span id="relogio">00:00:00</span></h1>
+        
+        <button onclick="registrar('entrada')">Entrada</button>
+        <button onclick="registrar('almocoSaida')">Saída Almoço</button>
+        <button onclick="registrar('almocoRetorno')">Retorno Almoço</button>
+        <button onclick="registrar('saida')">Saída</button>
+        <button onclick="adicionarRetroativo()" style="background-color: yellow;">Incluir Retroativo</button>
+        <button onclick="limparTudo()" style="color:red;">Limpar Tudo</button>
 
-    <div style="margin-top:20px;">
-        <label for="filtroMes">Filtrar por mês:</label>
-        <select id="filtroMes" onchange="renderizarTabela()">
-            <option value="todos">Todos os meses</option>
-            <option value="01/2026">01/2026</option>
-            <option value="02/2026">02/2026</option>
-            <option value="03/2026">03/2026</option>
-            <option value="04/2026">04/2026</option>
-            <option value="05/2026">05/2026</option>
-            <option value="06/2026">06/2026</option>
-            <option value="07/2026">07/2026</option>
-            <option value="08/2026">08/2026</option>
-            <option value="09/2026">09/2026</option>
-            <option value="10/2026">10/2026</option>
-            <option value="11/2026">11/2026</option>
-            <option value="12/2026">12/2026</option>
-        </select>
+        <div style="margin-top:20px;">
+            <label for="filtroMes">Filtrar por mês:</label>
+            <select id="filtroMes" onchange="renderizarTabela()">
+                <option value="todos">Todos os meses</option>
+                <option value="01/2026">01/2026</option>
+                <option value="02/2026">02/2026</option>
+                <option value="03/2026">03/2026</option>
+                <option value="04/2026">04/2026</option>
+                <option value="05/2026">05/2026</option>
+                <option value="06/2026">06/2026</option>
+                <option value="07/2026">07/2026</option>
+                <option value="08/2026">08/2026</option>
+                <option value="09/2026">09/2026</option>
+                <option value="10/2026">10/2026</option>
+                <option value="11/2026">11/2026</option>
+                <option value="12/2026">12/2026</option>
+            </select>
+
+            <!-- Novos botões de exportação mantendo a estrutura -->
+            <button onclick="baixarExcel()" style="background-color: #28a745; color: white; margin-left: 10px;">Baixar Excel</button>
+            <button onclick="baixarPDF()" style="background-color: #dc3545; color: white; margin-left: 5px;">Baixar PDF</button>
+        </div>
+
+        <table border="1" style="margin-top:10px; width:100%;">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Entrada</th>
+                    <th>Saída Almoço</th>
+                    <th>Retorno Almoço</th>
+                    <th>Saída</th>
+                    <th>Status do Dia</th>
+                </tr>
+            </thead>
+            <tbody id="corpoTabela"></tbody>
+        </table>
     </div>
-
-    <table border="1" style="margin-top:10px; width:100%;">
-        <thead>
-            <tr>
-                <th>Data</th>
-                <th>Entrada</th>
-                <th>Saída Almoço</th>
-                <th>Retorno Almoço</th>
-                <th>Saída</th>
-                <th>Status do Dia</th>
-            </tr>
-        </thead>
-        <tbody id="corpoTabela"></tbody>
-    </table>
 
     <script>
         const SENHA = "123456";
@@ -186,6 +194,36 @@
                 localStorage.removeItem('pontos_jonh');
                 renderizarTabela();
             }
+        }
+
+        // Função para baixar em Excel (formato CSV compatível)
+        function baixarExcel() {
+            const pontos = carregarPontos();
+            let csv = "Data;Entrada;Saida Almoco;Retorno Almoco;Saida\n";
+
+            Object.keys(pontos).sort().forEach(data => {
+                const p = pontos[data];
+                csv += `${data};${p.entrada};${p.almocoSaida};${p.almocoRetorno};${p.saida}\n`;
+            });
+
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "ponto_eletronico_jonh.csv";
+            link.click();
+        }
+
+        // Função para baixar em PDF
+        function baixarPDF() {
+            const elemento = document.getElementById('conteudoRelatorio');
+            const opt = {
+                margin:       10,
+                filename:     'ponto_eletronico_jonh.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().from(elemento).set(opt).save();
         }
 
         renderizarTabela();
