@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Ponto Eletrônico 44h</title>
-    <!-- Importação do cliente do Supabase para sincronização em tempo real -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Biblioteca para gerar PDF -->
+    <!-- Biblioteca leve necessária apenas para gerar o PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
@@ -38,6 +36,7 @@
                 <option value="12/2026">12/2026</option>
             </select>
 
+            <!-- Botões de exportação solicitados -->
             <button onclick="baixarExcel()" style="background-color: #28a745; color: white; margin-left: 10px;">Baixar Excel</button>
             <button onclick="baixarPDF()" style="background-color: #dc3545; color: white; margin-left: 5px;">Baixar PDF</button>
         </div>
@@ -58,11 +57,6 @@
     </div>
 
     <script>
-        // Configuração do Supabase (Insira a sua URL e Chave Anon do projeto Supabase)
-        const SUPABASE_URL = 'SUA_URL_DO_SUPABASE';
-        const SUPABASE_ANON_KEY = 'SUA_CHAVE_ANON_DO_SUPABASE';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
         const SENHA = "123456";
         const JORNADA_FIM = 16 * 60 + 20;
 
@@ -71,29 +65,18 @@
             document.getElementById('relogio').innerText = new Date().toLocaleTimeString();
         }, 1000);
 
-        // Carrega os dados direto da nuvem (Supabase)
-        async function carregarPontosDoBanco() {
-            const { data, error } = await supabase.from('pontos').select('*');
-            if (error) {
-                console.error('Erro ao carregar do banco:', error);
-                return {};
-            }
-            const pontosObj = {};
-            data.forEach(row => {
-                pontosObj[row.data] = {
-                    entrada: row.entrada,
-                    almocoSaida: row.almoco_saida,
-                    almocoRetorno: row.almoco_retorno,
-                    saida: row.saida
-                };
-            });
-            return pontosObj;
+        function carregarPontos() {
+            return JSON.parse(localStorage.getItem('pontos_jonh') || '{}');
         }
 
-        async function renderizarTabela() {
+        function salvarPontos(pontos) {
+            localStorage.setItem('pontos_jonh', JSON.stringify(pontos));
+        }
+
+        function renderizarTabela() {
             const corpo = document.getElementById('corpoTabela');
             const filtro = document.getElementById('filtroMes').value;
-            const pontos = await carregarPontosDoBanco();
+            const pontos = carregarPontos();
             
             corpo.innerHTML = '';
             let saldoMensal = 0;
@@ -154,80 +137,67 @@
             </tr>`;
         }
 
-        async function registrar(tipo) {
+        function registrar(tipo) {
             const hoje = new Date();
             const dataKey = hoje.toLocaleDateString();
             const horaAtual = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            const campoBanco = {
-                'entrada': 'entrada',
-                'almocoSaida': 'almoco_saida',
-                'almocoRetorno': 'almoco_retorno',
-                'saida': 'saida'
-            }[tipo];
+            let pontos = carregarPontos();
 
-            const { data: existente } = await supabase.from('pontos').select('*').eq('data', dataKey).single();
-
-            if (!existente) {
-                const novoRegistro = { data: dataKey, entrada: '-', almoco_saida: '-', almoco_retorno: '-', saida: '-' };
-                novoRegistro[campoBanco] = horaAtual;
-                await supabase.from('pontos').insert([novoRegistro]);
-            } else {
-                const atualizacao = {};
-                atualizacao[campoBanco] = horaAtual;
-                await supabase.from('pontos').update(atualizacao).eq('data', dataKey);
+            if (!pontos[dataKey]) {
+                pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
             }
 
+            pontos[dataKey][tipo] = horaAtual;
+            salvarPontos(pontos);
             renderizarTabela();
         }
 
-        async function adicionarRetroativo() {
+        function adicionarRetroativo() {
             if (prompt("Senha:") !== SENHA) return;
             const data = prompt("Digite a data (dd/mm/aaaa):");
             if (!data) return;
 
-            const { data: existente } = await supabase.from('pontos').select('*').eq('data', data).single();
-            if (!existente) {
-                await supabase.from('pontos').insert([{ data: data, entrada: '-', almoco_saida: '-', almoco_retorno: '-', saida: '-' }]);
+            let pontos = carregarPontos();
+            if (!pontos[data]) {
+                pontos[data] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
+                salvarPontos(pontos);
                 renderizarTabela();
             } else {
                 alert("Essa data já existe! Edite clicando no horário da tabela.");
             }
         }
 
-        async function interagir(data, tipo) {
+        function interagir(data, tipo) {
             if (prompt("Senha:") !== SENHA) return;
             const acao = prompt("Deseja [E]ditar ou [X]cluir?", "E");
             if (!acao) return;
 
-            const campoBanco = {
-                'entrada': 'entrada',
-                'almocoSaida': 'almoco_saida',
-                'almocoRetorno': 'almoco_retorno',
-                'saida': 'saida'
-            }[tipo];
+            let pontos = carregarPontos();
+            if (!pontos[data]) return;
 
-            let novoHorario = '-';
             if (acao.toUpperCase() === 'E') {
-                novoHorario = prompt("Novo horário (HH:MM):", "-");
-                if (!novoHorario) return;
+                const novoHorario = prompt("Novo horário (HH:MM):", pontos[data][tipo]);
+                if (novoHorario) {
+                    pontos[data][tipo] = novoHorario;
+                }
+            } else if (acao.toUpperCase() === 'X') {
+                pontos[data][tipo] = '-';
             }
 
-            const atualizacao = {};
-            atualizacao[campoBanco] = novoHorario;
-            await supabase.from('pontos').update(atualizacao).eq('data', data);
+            salvarPontos(pontos);
             renderizarTabela();
         }
 
-        async function limparTudo() {
+        function limparTudo() {
             if (prompt("Senha:") === SENHA) {
-                await supabase.from('pontos').delete().neq('id', 0);
+                localStorage.removeItem('pontos_jonh');
                 renderizarTabela();
             }
         }
 
-        async function baixarExcel() {
-            const pontos = await carregarPontosDoBanco();
+        function baixarExcel() {
+            const pontos = carregarPontos();
             let csv = "Data;Entrada;Saida Almoco;Retorno Almoco;Saida\n";
 
             Object.keys(pontos).sort().forEach(data => {
@@ -253,13 +223,6 @@
             };
             html2pdf().from(elemento).set(opt).save();
         }
-
-        // Atualização automática em tempo real se outro dispositivo registrar algo
-        supabase.channel('public:pontos')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'pontos' }, () => {
-                renderizarTabela();
-            })
-            .subscribe();
 
         renderizarTabela();
     </script>
