@@ -3,52 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <title>Ponto Eletrônico 44h</title>
+    <!-- Importação do cliente do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Biblioteca para gerar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
-    <h1>Colaborador: Jonh Henrique Sena da Silva</h1>
-    <h1>Relógio: <span id="relogio">00:00:00</span></h1>
-    
-    <button onclick="registrar('entrada')">Entrada</button>
-    <button onclick="registrar('almocoSaida')">Saída Almoço</button>
-    <button onclick="registrar('almocoRetorno')">Retorno Almoço</button>
-    <button onclick="registrar('saida')">Saída</button>
-    <button onclick="adicionarRetroativo()" style="background-color: yellow;">Incluir Retroativo</button>
-    <button onclick="limparTudo()" style="color:red;">Limpar Tudo</button>
+    <div id="conteudoRelatorio">
+        <h1>Colaborador: Jonh Henrique Sena da Silva</h1>
+        <h1>Relógio: <span id="relogio">00:00:00</span></h1>
+        
+        <div id="botoesAcao" style="margin-bottom: 15px;">
+            <button onclick="registrar('entrada')">Entrada</button>
+            <button onclick="registrar('almocoSaida')">Saída Almoço</button>
+            <button onclick="registrar('almocoRetorno')">Retorno Almoço</button>
+            <button onclick="registrar('saida')">Saída</button>
+            <button onclick="adicionarRetroativo()" style="background-color: yellow;">Incluir Retroativo</button>
+            <button onclick="limparTudo()" style="color:red;">Limpar Tudo</button>
+        </div>
 
-    <div style="margin-top:20px;">
-        <label for="filtroMes">Filtrar por mês:</label>
-        <select id="filtroMes" onchange="renderizarTabela()">
-            <option value="todos">Todos os meses</option>
-            <option value="01/2026">01/2026</option>
-            <option value="02/2026">02/2026</option>
-            <option value="03/2026">03/2026</option>
-            <option value="04/2026">04/2026</option>
-            <option value="05/2026">05/2026</option>
-            <option value="06/2026">06/2026</option>
-            <option value="07/2026">07/2026</option>
-            <option value="08/2026">08/2026</option>
-            <option value="09/2026">09/2026</option>
-            <option value="10/2026">10/2026</option>
-            <option value="11/2026">11/2026</option>
-            <option value="12/2026">12/2026</option>
-        </select>
+        <div style="margin-top:20px; margin-bottom: 15px;" class="nao-imprimir">
+            <label for="filtroMes">Filtrar por mês:</label>
+            <select id="filtroMes" onchange="renderizarTabela()">
+                <option value="todos">Todos os meses</option>
+                <option value="01/2026">01/2026</option>
+                <option value="02/2026">02/2026</option>
+                <option value="03/2026">03/2026</option>
+                <option value="04/2026">04/2026</option>
+                <option value="05/2026">05/2026</option>
+                <option value="06/2026">06/2026</option>
+                <option value="07/2026">07/2026</option>
+                <option value="08/2026">08/2026</option>
+                <option value="09/2026">09/2026</option>
+                <option value="10/2026">10/2026</option>
+                <option value="11/2026">11/2026</option>
+                <option value="12/2026">12/2026</option>
+            </select>
+            
+            <button onclick="baixarExcel()" style="background-color: #28a745; color: white; margin-left: 10px;">Baixar Excel</button>
+            <button onclick="baixarPDF()" style="background-color: #dc3545; color: white; margin-left: 5px;">Baixar PDF</button>
+        </div>
+
+        <table border="1" style="margin-top:10px; width:100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background-color: #f8f9fa;">
+                    <th style="padding: 8px;">Data</th>
+                    <th style="padding: 8px;">Entrada</th>
+                    <th style="padding: 8px;">Saída Almoço</th>
+                    <th style="padding: 8px;">Retorno Almoço</th>
+                    <th style="padding: 8px;">Saída</th>
+                    <th style="padding: 8px;">Status do Dia</th>
+                </tr>
+            </thead>
+            <tbody id="corpoTabela"></tbody>
+        </table>
     </div>
 
-    <table border="1" style="margin-top:10px; width:100%;">
-        <thead>
-            <tr>
-                <th>Data</th>
-                <th>Entrada</th>
-                <th>Saída Almoço</th>
-                <th>Retorno Almoço</th>
-                <th>Saída</th>
-                <th>Status do Dia</th>
-            </tr>
-        </thead>
-        <tbody id="corpoTabela"></tbody>
-    </table>
-
     <script>
+        // Configuração do Supabase (Mantenha as suas chaves aqui se já tiver configurado)
+        const SUPABASE_URL = 'SUA_URL_DO_SUPABASE';
+        const SUPABASE_ANON_KEY = 'SUA_CHAVE_ANON_DO_SUPABASE';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         const SENHA = "123456";
         const JORNADA_FIM = 16 * 60 + 20;
 
@@ -57,18 +73,29 @@
             document.getElementById('relogio').innerText = new Date().toLocaleTimeString();
         }, 1000);
 
-        function carregarPontos() {
-            return JSON.parse(localStorage.getItem('pontos_jonh') || '{}');
+        // Carrega os dados assincronamente da tabela do banco de dados
+        async function carregarPontosDoBanco() {
+            const { data, error } = await supabase.from('pontos').select('*');
+            if (error) {
+                console.error('Erro ao carregar pontos:', error);
+                return {};
+            }
+            const pontosObj = {};
+            data.forEach(row => {
+                pontosObj[row.data] = {
+                    entrada: row.entrada,
+                    almocoSaida: row.almoco_saida,
+                    almocoRetorno: row.almoco_retorno,
+                    saida: row.saida
+                };
+            });
+            return pontosObj;
         }
 
-        function salvarPontos(pontos) {
-            localStorage.setItem('pontos_jonh', JSON.stringify(pontos));
-        }
-
-        function renderizarTabela() {
+        async function renderizarTabela() {
             const corpo = document.getElementById('corpoTabela');
             const filtro = document.getElementById('filtroMes').value;
-            const pontos = carregarPontos();
+            const pontos = await carregarPontosDoBanco();
             
             corpo.innerHTML = '';
             let saldoMensal = 0;
@@ -111,83 +138,127 @@
                 }
 
                 corpo.innerHTML += `<tr>
-                    <td>${data}</td>
-                    <td onclick="interagir('${data}', 'entrada')" style="cursor:pointer; color:blue;">${p.entrada}</td>
-                    <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue;">${p.almocoSaida}</td>
-                    <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue;">${p.almocoRetorno}</td>
-                    <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue;">${p.saida}</td>
-                    <td style="color:${cor}; font-weight:bold;">${status}</td>
+                    <td style="padding: 8px; text-align: center;">${data}</td>
+                    <td onclick="interagir('${data}', 'entrada')" style="cursor:pointer; color:blue; padding: 8px; text-align: center;">${p.entrada}</td>
+                    <td onclick="interagir('${data}', 'almocoSaida')" style="cursor:pointer; color:blue; padding: 8px; text-align: center;">${p.almocoSaida}</td>
+                    <td onclick="interagir('${data}', 'almocoRetorno')" style="cursor:pointer; color:blue; padding: 8px; text-align: center;">${p.almocoRetorno}</td>
+                    <td onclick="interagir('${data}', 'saida')" style="cursor:pointer; color:blue; padding: 8px; text-align: center;">${p.saida}</td>
+                    <td style="color:${cor}; font-weight:bold; padding: 8px; text-align: center;">${status}</td>
                 </tr>`;
             });
 
             const sinal = saldoMensal >= 0 ? '+' : '';
             corpo.innerHTML += `<tr style="background-color: #f0f0f0;">
-                <td colspan="5" style="text-align:right; font-weight:bold;">Saldo Acumulado do Mês:</td>
-                <td style="color:${saldoMensal >= 0 ? 'blue' : 'red'}; font-weight:bold;">
+                <td colspan="5" style="text-align:right; font-weight:bold; padding: 8px;">Saldo Acumulado do Mês:</td>
+                <td style="color:${saldoMensal >= 0 ? 'blue' : 'red'}; font-weight:bold; padding: 8px; text-align: center;">
                     ${sinal}${Math.floor(Math.abs(saldoMensal)/60)}h ${Math.abs(saldoMensal)%60}m
                 </td>
             </tr>`;
         }
 
-        function registrar(tipo) {
+        async function registrar(tipo) {
             const hoje = new Date();
             const dataKey = hoje.toLocaleDateString();
             const horaAtual = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            let pontos = carregarPontos();
+            const campoBanco = {
+                'entrada': 'entrada',
+                'almocoSaida': 'almoco_saida',
+                'almocoRetorno': 'almoco_retorno',
+                'saida': 'saida'
+            }[tipo];
 
-            if (!pontos[dataKey]) {
-                pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
+            const { data: existente } = await supabase.from('pontos').select('*').eq('data', dataKey).single();
+
+            if (!existente) {
+                const novoRegistro = { data: dataKey, entrada: '-', almoco_saida: '-', almoco_retorno: '-', saida: '-' };
+                novoRegistro[campoBanco] = horaAtual;
+                await supabase.from('pontos').insert([novoRegistro]);
+            } else {
+                const atualizacao = {};
+                atualizacao[campoBanco] = horaAtual;
+                await supabase.from('pontos').update(atualizacao).eq('data', dataKey);
             }
 
-            pontos[dataKey][tipo] = horaAtual;
-            salvarPontos(pontos);
             renderizarTabela();
         }
 
-        function adicionarRetroativo() {
+        async function adicionarRetroativo() {
             if (prompt("Senha:") !== SENHA) return;
             const data = prompt("Digite a data (dd/mm/aaaa):");
             if (!data) return;
 
-            let pontos = carregarPontos();
-            if (!pontos[data]) {
-                pontos[data] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
-                salvarPontos(pontos);
+            const { data: existente } = await supabase.from('pontos').select('*').eq('data', data).single();
+            if (!existente) {
+                await supabase.from('pontos').insert([{ data: data, entrada: '-', almoco_saida: '-', almoco_retorno: '-', saida: '-' }]);
                 renderizarTabela();
             } else {
                 alert("Essa data já existe! Edite clicando no horário da tabela.");
             }
         }
 
-        function interagir(data, tipo) {
+        async function interagir(data, tipo) {
             if (prompt("Senha:") !== SENHA) return;
             const acao = prompt("Deseja [E]ditar ou [X]cluir?", "E");
             if (!acao) return;
 
-            let pontos = carregarPontos();
-            if (!pontos[data]) return;
+            const campoBanco = {
+                'entrada': 'entrada',
+                'almocoSaida': 'almoco_saida',
+                'almocoRetorno': 'almoco_retorno',
+                'saida': 'saida'
+            }[tipo];
 
+            let novoHorario = '-';
             if (acao.toUpperCase() === 'E') {
-                const novoHorario = prompt("Novo horário (HH:MM):", pontos[data][tipo]);
-                if (novoHorario) {
-                    pontos[data][tipo] = novoHorario;
-                }
-            } else if (acao.toUpperCase() === 'X') {
-                pontos[data][tipo] = '-';
+                novoHorario = prompt("Novo horário (HH:MM):", "-");
+                if (!novoHorario) return;
             }
 
-            salvarPontos(pontos);
+            const atualizacao = {};
+            atualizacao[campoBanco] = novoHorario;
+            await supabase.from('pontos').update(atualizacao).eq('data', data);
             renderizarTabela();
         }
 
-        function limparTudo() {
+        async function limparTudo() {
             if (prompt("Senha:") === SENHA) {
-                localStorage.removeItem('pontos_jonh');
+                await supabase.from('pontos').delete().neq('id', 0);
                 renderizarTabela();
             }
         }
 
+        // Função para exportar em Excel (CSV)
+        async function baixarExcel() {
+            const pontos = await carregarPontosDoBanco();
+            let csv = "Data;Entrada;Saida Almoco;Retorno Almoco;Saida;Status\n";
+
+            Object.keys(pontos).sort().forEach(data => {
+                const p = pontos[data];
+                csv += `${data};${p.entrada};${p.almocoSaida};${p.almocoRetorno};${p.saida};\n`;
+            });
+
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "ponto_eletronico_jonh.csv";
+            link.click();
+        }
+
+        // Função para exportar em PDF
+        function baixarPDF() {
+            const elemento = document.getElementById('conteudoRelatorio');
+            const opt = {
+                margin:       10,
+                filename:     'ponto_eletronico_jonh.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().from(elemento).set(opt).save();
+        }
+
+        // Executa a renderização inicial ao carregar a página
         renderizarTabela();
     </script>
 </body>
