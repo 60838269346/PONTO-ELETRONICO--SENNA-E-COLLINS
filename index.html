@@ -60,52 +60,23 @@
         const SENHA = "123456";
         const JORNADA_FIM = 16 * 60 + 20;
 
-        // CONFIGURAÇÕES DO JSONBIN.IO (Insira seus dados aqui)
-        const BIN_ID = "SEU_BIN_ID_AQUI"; 
-        const API_KEY = "SUA_MASTER_KEY_AQUI";
-
         // Relógio em tempo real
         setInterval(() => {
             document.getElementById('relogio').innerText = new Date().toLocaleTimeString();
         }, 1000);
 
-        async function carregarPontos() {
-            try {
-                const resposta = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-                    headers: {
-                        'X-Master-Key': API_KEY
-                    }
-                });
-                const resultado = await resposta.json();
-                // O jsonbin armazena os dados dentro da propriedade 'record'
-                return resultado.record || {};
-            } catch (erro) {
-                console.error("Erro ao carregar dados da nuvem:", erro);
-                alert("Erro ao conectar com o servidor na nuvem.");
-                return {};
-            }
+        function carregarPontos() {
+            return JSON.parse(localStorage.getItem('pontos_jonh') || '{}');
         }
 
-        async function salvarPontos(pontos) {
-            try {
-                await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': API_KEY
-                    },
-                    body: JSON.stringify(pontos)
-                });
-            } catch (erro) {
-                console.error("Erro ao salvar dados na nuvem:", erro);
-                alert("Erro ao salvar as alterações na nuvem.");
-            }
+        function salvarPontos(pontos) {
+            localStorage.setItem('pontos_jonh', JSON.stringify(pontos));
         }
 
-        async function renderizarTabela() {
+        function renderizarTabela() {
             const corpo = document.getElementById('corpoTabela');
             const filtro = document.getElementById('filtroMes').value;
-            const pontos = await carregarPontos();
+            const pontos = carregarPontos();
             
             corpo.innerHTML = '';
             let saldoMensal = 0;
@@ -168,42 +139,42 @@
             </tr>`;
         }
 
-        async function registrar(tipo) {
+        function registrar(tipo) {
             const hoje = new Date();
             const dataKey = hoje.toLocaleDateString();
             const horaAtual = hoje.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            let pontos = await carregarPontos();
+            let pontos = carregarPontos();
             if (!pontos[dataKey]) {
                 pontos[dataKey] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
             }
             pontos[dataKey][tipo] = horaAtual;
             
-            await salvarPontos(pontos);
+            salvarPontos(pontos);
             renderizarTabela();
         }
 
-        async function adicionarRetroativo() {
+        function adicionarRetroativo() {
             if (prompt("Senha:") !== SENHA) return;
             const data = prompt("Digite a data (dd/mm/aaaa):");
             if (!data) return;
 
-            let pontos = await carregarPontos();
+            let pontos = carregarPontos();
             if (!pontos[data]) {
                 pontos[data] = { entrada: '-', almocoSaida: '-', almocoRetorno: '-', saida: '-' };
-                await salvarPontos(pontos);
+                salvarPontos(pontos);
                 renderizarTabela();
             } else {
                 alert("Essa data já existe! Edite clicando no horário da tabela.");
             }
         }
 
-        async function interagir(data, tipo) {
+        function interagir(data, tipo) {
             if (prompt("Senha:") !== SENHA) return;
             const acao = prompt("Deseja [E]ditar ou [X]cluir?", "E");
             if (!acao) return;
 
-            let pontos = await carregarPontos();
+            let pontos = carregarPontos();
             if (!pontos[data]) return;
 
             if (acao.toUpperCase() === 'E') {
@@ -215,19 +186,19 @@
                 pontos[data][tipo] = '-';
             }
 
-            await salvarPontos(pontos);
+            salvarPontos(pontos);
             renderizarTabela();
         }
 
-        async function limparTudo() {
+        function limparTudo() {
             if (prompt("Senha:") === SENHA) {
-                await salvarPontos({});
+                salvarPontos({});
                 renderizarTabela();
             }
         }
 
-        async function baixarExcel() {
-            const pontos = await carregarPontos();
+        function baixarExcel() {
+            const pontos = carregarPontos();
             let csv = "Data;Entrada;Saida Almoco;Retorno Almoco;Saida\n";
             Object.keys(pontos).sort().forEach(data => {
                 const p = pontos[data];
@@ -252,9 +223,7 @@
             html2pdf().from(elemento).set(opt).save();
         }
 
-        // Executa ao carregar a página
         renderizarTabela();
     </script>
 </body>
 </html>
-           
